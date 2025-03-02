@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { Play, Pause} from "lucide-react";
+import FloatingNav from '@/components/FloatingNav';
 
 // Type definitions
 type WorkoutState = {
@@ -27,8 +29,8 @@ const WorkoutProgress = () => {
     targetMuscle: "Biceps",
     intensity: 65,
     formQuality: 4,
-    isActive: true,
-    elapsedTime: 765 // in seconds (12:45)
+    isActive: false,
+    elapsedTime: 0 // in seconds (12:45)
   });
 
   // Refs
@@ -135,9 +137,9 @@ const WorkoutProgress = () => {
 
   // Initialize camera and timer
   useEffect(() => {
-    startCamera();
+    stopCamera();
     if (workoutState.isActive) {
-      startTimer();
+      stopTimer();
     }
 
     // Clean up function
@@ -146,6 +148,12 @@ const WorkoutProgress = () => {
       stopTimer();
     };
   }, []);
+
+  // End exercise session
+  const endExerciseSession = ()=>{
+    console.log("hellp")
+    
+  }
 
   // Render stars for 1-5 rating
   const renderStars = (rating: number) => {
@@ -176,7 +184,7 @@ const WorkoutProgress = () => {
   return (
     <div className="bg-[#141429] text-white font-sans min-h-screen">
       {/* Header with Logo and Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-gray-900/90 backdrop-blur-md">
+      {/* <header className="fixed top-0 left-0 right-0 z-50 bg-gray-900/90 backdrop-blur-md">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-500">
@@ -202,8 +210,8 @@ const WorkoutProgress = () => {
             </svg>
           </button>
         </div>
-      </header>
-
+      </header> */}
+      <FloatingNav />
       {/* Main Workout Progress Container */}
       <main className="container mx-auto px-4 pt-24 pb-16">
         <h1 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Workout Progress</h1>
@@ -316,24 +324,26 @@ const WorkoutProgress = () => {
               <div className="space-y-4">
                 {!workoutState.isActive && (
                   <button 
-                    onClick={startWorkout} 
-                    className="w-full py-3 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium transition hover:opacity-90"
-                  >
-                    Start Exercise
-                  </button>
-                )}
+                  onClick={startWorkout} 
+                  className="w-full py-3 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium transition hover:opacity-90 flex items-center justify-center gap-2"
+                >
+                  <Play size={20} />
+                  Start Exercise
+                </button>)}
                 
                 {workoutState.isActive && (
                   <button 
                     onClick={stopWorkout} 
-                    className="w-full py-3 rounded-lg bg-gradient-to-r from-red-500 to-pink-600 text-white font-medium transition hover:opacity-90"
+                    className="w-full py-3 rounded-lg bg-gradient-to-r from-red-500 to-pink-600 text-white font-medium transition hover:opacity-90 flex items-center justify-center gap-2"
                   >
-                    Stop Exercise
-                  </button>
-                )}
+                  <Pause size={20} />
+                    Pause
+                    </button>
+                  )}
                 
-                <button className="w-full py-3 rounded-lg border border-purple-500 text-purple-400 font-medium transition hover:bg-purple-900/30">
-                  Switch Exercise
+                <button  onClick= {endExerciseSession} 
+                className="w-full py-3 rounded-lg border border-purple-500 text-purple-400 font-medium transition hover:bg-purple-900/30">
+                  End Exercise
                 </button>
               </div>
             </div>

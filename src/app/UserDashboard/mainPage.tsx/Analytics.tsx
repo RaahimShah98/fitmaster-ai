@@ -1,5 +1,5 @@
 
-import React, { useEffect , useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import WeightTracker from '../charts/WeightTrackingLineChart';
 import { useAuth } from '@/context/FirebaseContext';
 
@@ -33,47 +33,57 @@ ChartJS.register(
 
 const UserAnayltics = () => {
     const { user } = useAuth();
-    const [data , setData]= useState<object>();
-
-
+    const email = user?.email;
+    // const [email, setEmail] = useState<string | null>(null);
+    const [data, setData] = useState<object | null>(null);
     console.log("USER: ", user?.email)
 
-    const getDocData = async (email:string) => {
+
+    const getDocData = async (email: string) => {
         const userRef = doc(db, "user_exercise_data", email);
         // console.log("REF:" , userRef)
         const userSnap = await getDoc(userRef);
 
-        if(!userSnap.exists()){
+        if (!userSnap.exists()) {
             console.log("No such document!");
-        }else{
+        } else {
             // console.log("Document data:", userSnap.data());
             console.log("HELLO")
             return userSnap.data();
         }
     }
 
-   useEffect(() => {
-    const fetchData = async () => {
-      const docData = await getDocData("test20@gmail.com"); // Wait for the data
-      console.log("Fetched Data:", docData);
-      setData(docData);
-    };
+    useEffect(() => {
+        console.log("EMAIL NISIDE: ", email);
 
-    fetchData();
-  }, []);
+    }, []);
 
-  useEffect(() => {
-    console.log("DATA UPDATED:", data);
-    // console.log(data.Date.excercise.excercise_name,)
-  }, [data]);
-    
+    // RUN AFTER EMAIL IS SET
+    useEffect(() => {
+        console.log("EMAIL: ", email);
+
+        const fetchData = async () => {
+            const docData = await getDocData(email); // Wait for the data
+            console.log("Fetched Data:", docData);
+            setData(docData);
+        };
+
+        fetchData();
+    }, [email]);
+
+    useEffect(() => {
+        // console.log("DATA UPDATED:", data);
+
+        console.log(data?.Date?.excercise.excercise_name, data?.Date?.excercise.exercise_sets)
+    }, [data]);
+
     // Sample data for exercises sets
     const pieChartData = {
-        labels: ['Push-ups', 'Squats', 'Pull-ups', 'Lunges', 'Planks'],
-        // labels: data.Date.excercise.excercise_name,
+        // labels: ['Push-ups', 'Squats', 'Pull-ups', 'Lunges', 'Planks'],
+        labels: data?.Date?.excercise.excercise_name,
         datasets: [{
-            data: [30, 25, 15, 20, 10],
-            // data: data.Date.excercise.excercise_sets,
+            // data: [30, 25, 15, 20, 10],
+            data: data?.Date?.excercise.exercise_sets,
             backgroundColor: [
                 'rgba(255, 99, 132, 0.8)',
                 'rgba(54, 162, 235, 0.8)',

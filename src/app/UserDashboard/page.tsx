@@ -1,13 +1,15 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import UserDashboardHeader from './header';
 
 import UserDashboardMenu from './sideBar';
-
+import FloatingNav from '@/components/FloatingNav';
 import UserAnayltics from './mainPage.tsx/Analytics';
 import UserSettings from './mainPage.tsx/userSettings';
 import UserGoals from './mainPage.tsx/Goals';
-import LoginForm from '@/LoginForm';
-import SignupForm from '@/SignUp';
+import LoginForm from '@/app/LoginForm/page';
+import SignupForm from '@/app/SignUp/page';
 // import { firebaseConfig } from '@/lib/firebase';
 
 const UserDashboard: React.FC = () => {
@@ -36,8 +38,8 @@ const UserDashboard: React.FC = () => {
 
     return (
         <div>
-            <UserDashboardHeader />
-            <div className='flex flex-row w-full'>
+            <FloatingNav />
+            <div className='flex flex-row w-full absolute top-19'>
                 <UserDashboardMenu setSelectedPage={setSelectedPage} />
                 <div className="flex w-full">{renderPage()}</div>
             </div>
