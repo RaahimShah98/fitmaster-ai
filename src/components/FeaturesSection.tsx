@@ -13,27 +13,30 @@
 ];*/
 
 export const FeaturesSection = () => {
+
+  const features = [
+    {
+      title: "Dynamic Workout Plans",
+      description: "AI adjusts your workouts daily to match your progress.",
+    },
+    {
+      title: "Fitness Goals Tracking",
+      description: "Monitor calories, streaks, and weekly achievements.",
+    },
+    {
+      title: "Community Challenges",
+      description: "Compete with others and join leaderboards for motivation.",
+    },
+  ];
+
   return (
      <><section className="py-16 bg-black/10 text-white">
       <div className="max-w-7xl mx-auto px-4">
         <h2 className="text-center text-4xl font-bold mb-12">
-          Features That Redefine Fitness
+          What is FitMaster-AI
         </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[
-            {
-              title: "Dynamic Workout Plans",
-              description: "AI adjusts your workouts daily to match your progress.",
-            },
-            {
-              title: "Fitness Goals Tracking",
-              description: "Monitor calories, streaks, and weekly achievements.",
-            },
-            {
-              title: "Community Challenges",
-              description: "Compete with others and join leaderboards for motivation.",
-            },
-          ].map((feature, i) => (
+          {features.map((feature, i) => (
             <div
               key={i}
               className="bg-white/10 backdrop-blur-lg rounded-xl p-6 hover:bg-white/20 transition-all duration-300"

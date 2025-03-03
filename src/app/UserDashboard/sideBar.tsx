@@ -18,19 +18,11 @@ const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({ setSelectedPage }
     Goals: {
         imgsrc: "settings-icon.svg",
         name: "Goals",
-      },
-    Logout: {
-      imgsrc: "logout-icon.svg",
-      name: "Logout",
-    },
-    Login: {
-      imgsrc: "logout-icon.svg",
-      name: "Login",
-    },
-    SignUp: {
-      imgsrc: "logout-icon.svg",
-      name: "SignUp",
-    },
+      }
+      // ADD a start workoout button
+      // ADD a  get AI based diet
+      // ADD a AI based workout
+      //ADD a upload food image and get calories
   };
 
   return (

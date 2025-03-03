@@ -25,10 +25,6 @@ const UserDashboard: React.FC = () => {
                 return <UserSettings />;
             case "Goals":
                 return <UserGoals />;
-            case "Login":
-                return <LoginForm />;
-            case "SignUp":
-                return <SignupForm />;
             default:
                 return <UserAnayltics />;
         }
@@ -38,7 +34,7 @@ const UserDashboard: React.FC = () => {
 
     return (
         <div>
-            <FloatingNav />
+            {/* <FloatingNav /> */}
             <div className='flex flex-row w-full absolute top-19'>
                 <UserDashboardMenu setSelectedPage={setSelectedPage} />
                 <div className="flex w-full">{renderPage()}</div>

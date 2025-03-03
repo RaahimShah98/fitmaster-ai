@@ -1,16 +1,13 @@
 "use client";
 
-import UserDashboard from "./UserDashboard/page";
 import LandingPage from "./Landing Page/Landingpage";
-import Router from "next/router";
-import WorkoutProgress from '@/components/workoutprogress/workoutprogress';
+import ChatbotInterface from "./chatBot/chatbot";
 
 export default function Home() {
   return (
     <div>
       <LandingPage></LandingPage>
-      {/* <WorkoutProgress /> */}
-      {/* <UserDashboard /> */}
+      <ChatbotInterface></ChatbotInterface>
     </div>
   );
 }
