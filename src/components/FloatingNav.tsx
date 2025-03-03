@@ -29,15 +29,15 @@ const FloatingNav: React.FC<FloatingNavProps> = ({ setLoginPage }) => {
     { name: 'Blog', href: '#blog' },
   ];
 
-  const DropDownItems = [{ name: "Profile", action: () => reDirect() }, { name: "Start Workout", action: () => startWorkout() }, { name: "Logout", action: () => handleSignOut() }];
+  const DropDownItems = [{ name: "Profile", action: () => reDirect() }, { name: "Start Workout", action: () => startWorkout() }, { name: "Track Food", action: () => trackFood() }, { name: "Logout", action: () => handleSignOut() }];
 
-  const handleSignOut = async()=>{
-    try{
+  const handleSignOut = async () => {
+    try {
       await logout()
       router.replace('/');
 
     }
-    catch(e){
+    catch (e) {
       console.log(e)
     }
   }
@@ -49,6 +49,11 @@ const FloatingNav: React.FC<FloatingNavProps> = ({ setLoginPage }) => {
 
   const startWorkout = () => {
     router.push('/workoutprogress')
+
+  }
+
+  const trackFood = () => {
+    router.push('/FoodTracking')
 
   }
 
