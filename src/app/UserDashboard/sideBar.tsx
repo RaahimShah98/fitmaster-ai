@@ -1,43 +1,86 @@
 import React, { useState } from "react";
-// import Link from "next/link";
+import { XMarkIcon, ChartBarIcon, CogIcon, CameraIcon, HeartIcon, FireIcon } from "@heroicons/react/24/outline";
 
 interface UserDashboardMenuProps {
   setSelectedPage: (page: string) => void;
 }
 
 const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({ setSelectedPage }) => {
-  const sideBarItems = {
-    Analytics: {
-      imgsrc: "analytics-icon.svg",
-      name: "Analytics",
-    },
-    Settings: {
-      imgsrc: "settings-icon.svg",
-      name: "Settings",
-    },
-    Goals: {
-        imgsrc: "settings-icon.svg",
-        name: "Goals",
-      }
-      // ADD a start workoout button
-      // ADD a  get AI based diet
-      // ADD a AI based workout
-      //ADD a upload food image and get calories
-  };
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const DumbbellIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className="h-5 w-5 mr-3"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 10h3v4H3v-4zm15 0h3v4h-3v-4zM7 14h10M7 10h10m-7 4v-4m4 4v-4"
+      />
+    </svg>
+  );
+  
+  const sideBarItems = [
+    { name: "Analytics", icon: <ChartBarIcon className="h-5 w-5 mr-3" />, page: "Analytics" },
+    { name: "Settings", icon: <CogIcon className="h-5 w-5 mr-3" />, page: "Settings" },
+    { name: "Goals", icon: <HeartIcon className="h-5 w-5 mr-3" />, page: "Goals" },
+    { name: "Start Workout", icon: DumbbellIcon(), page: "StartWorkout" },
+    { name: "Track Food", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "UploadFood" },
+  ];
 
   return (
-    <div className="w-[20%] bg-gray-200 h-screen sticky top-0 text-black flex flex-col items-start p-4">
-      {Object.entries(sideBarItems).map(([key, item]) => (
-        <button
-          key={key}
-          onClick={() => setSelectedPage(key)}
-          className="w-full flex items-center p-3 hover:bg-gray-300 rounded-md focus:outline-none"
-        >
-          <img src={item.imgsrc} alt={item.name} className="w-6 h-6 mr-3" />
-          <span>{item.name}</span>
-        </button>
-      ))}
-    </div>
+    <>
+      {/* Mobile Sidebar */}
+      <div className={`${sidebarOpen ? "block" : "hidden"} fixed inset-0 z-40 lg:hidden`}>
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-75" onClick={() => setSidebarOpen(false)}></div>
+        <div className="fixed inset-y-0 left-0 flex flex-col w-64 max-w-xs bg-gray-900 border-r border-gray-700 text-white">
+          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-700">
+            <span className="text-xl font-semibold">FitMaster AI</span>
+            <button className="text-gray-400 hover:text-white" onClick={() => setSidebarOpen(false)}>
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
+          <nav className="flex-1 px-2 py-4 space-y-1">
+            {sideBarItems.map((item) => (
+              <button
+                key={item.page}
+                onClick={() => setSelectedPage(item.page)}
+                className="flex items-center w-full px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
+              >
+                {item.icon}
+                {item.name}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:flex lg:flex-shrink-0">
+        <div className="flex flex-col w-64 border-r border-gray-700 bg-gray-900 text-white">
+          <div className="flex items-center h-16 px-4 border-b border-gray-700">
+            <span className="text-xl font-semibold">FitMaster AI</span>
+          </div>
+          <nav className="flex-1 px-2 py-4 space-y-1">
+            {sideBarItems.map((item) => (
+              <button
+                key={item.page}
+                onClick={() => setSelectedPage(item.page)}
+                className="flex items-center w-full px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
+              >
+                {item.icon}
+                {item.name}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+    </>
   );
 };
 

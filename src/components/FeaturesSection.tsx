@@ -30,7 +30,9 @@ export const FeaturesSection = () => {
   ];
 
   return (
-     <><section className="py-16 bg-black/10 text-white">
+     <div >
+      <section className="py-16 bg-black/10 text-white relative z-10"
+     > 
       <div className="max-w-7xl mx-auto px-4">
         <h2 className="text-center text-4xl font-bold mb-12">
           What is FitMaster-AI
@@ -47,7 +49,7 @@ export const FeaturesSection = () => {
           ))}
         </div>
       </div>
-    </section><section className="py-16 bg-black/10 text-white">
+    </section><section className="py-16 bg-black/10 text-white relative z-10">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-center text-4xl font-bold mb-12">
             Explore Fitness Inspiration
@@ -78,7 +80,8 @@ export const FeaturesSection = () => {
             ))}
           </div>
         </div>
-      </section></>
+      </section>
+      </div>
     
   );
 };

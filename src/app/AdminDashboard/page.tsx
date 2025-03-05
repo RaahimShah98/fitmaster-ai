@@ -1,11 +1,15 @@
 // pages/admin/dashboard.tsx
 "use client"
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/firebase';
+import { doc, collection, getDocs } from 'firebase/firestore';
+
 import Head from 'next/head';
 import Link from 'next/link';
-import { 
-  UsersIcon, 
-  ChartBarIcon, 
+import {
+  UsersIcon,
+  ChartBarIcon,
   CogIcon,
   PlusIcon,
   TrashIcon,
@@ -44,11 +48,14 @@ ChartJS.register(
 
 // Define types for our data
 type User = {
-  id: string;
-  name: string;
+  fullName: string;
   email: string;
-  joinDate: string;
-  lastLogin: string;
+  dob: string;
+  weight:string;
+  height: string;
+  weight_goal: string;
+  Role: string;
+  RegisterDate: string;
   workoutsCompleted: number;
   subscriptionType: 'Free' | 'Premium' | 'Enterprise';
   status: 'Active' | 'Inactive' | 'Suspended';
@@ -69,65 +76,48 @@ const AdminDashboard: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setfilteredUsers] = useState<User[]>([]);
+  const [subscriptionData, setSubscriptionData] = useState<number[]>([]);
+  //get Users FROM DB
+
+  const getDocData = async (): Promise<User[]> => {
+    const userData = await getDocs(collection(db, "user"));
+    const data = userData.docs.map(doc => doc.data() as User); // Ensure correct type
+    console.log("DATA: ", data);
+    return data;
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await getDocData(); // Await the async function
+      setUsers(data); // Now setting the array properly
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+
+    setfilteredUsers(users.filter(user =>
+      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    ));
+
+    const labels = ['Free', 'Premium', 'Enterprise'];
+
+    const newSubscriptionData = labels.map(label =>
+      users.filter(user => user.subscriptionType === label).length
+    );
   
-  // Mock data for users
-  const [users, setUsers] = useState<User[]>([
-    { 
-      id: '1', 
-      name: 'Alex Smith', 
-      email: 'alex@example.com', 
-      joinDate: '2024-12-15', 
-      lastLogin: '2025-03-02', 
-      workoutsCompleted: 87, 
-      subscriptionType: 'Premium', 
-      status: 'Active',
-      progress: 75
-    },
-    { 
-      id: '2', 
-      name: 'Jordan Lee', 
-      email: 'jordan@example.com', 
-      joinDate: '2025-01-05', 
-      lastLogin: '2025-03-01', 
-      workoutsCompleted: 45, 
-      subscriptionType: 'Free', 
-      status: 'Active',
-      progress: 62
-    },
-    { 
-      id: '3', 
-      name: 'Taylor Kim', 
-      email: 'taylor@example.com', 
-      joinDate: '2024-11-20', 
-      lastLogin: '2025-02-28', 
-      workoutsCompleted: 120, 
-      subscriptionType: 'Enterprise', 
-      status: 'Active',
-      progress: 89
-    },
-    { 
-      id: '4', 
-      name: 'Morgan Chen', 
-      email: 'morgan@example.com', 
-      joinDate: '2025-02-10', 
-      lastLogin: '2025-02-25', 
-      workoutsCompleted: 23, 
-      subscriptionType: 'Free', 
-      status: 'Inactive',
-      progress: 35
-    },
-    { 
-      id: '5', 
-      name: 'Casey Johnson', 
-      email: 'casey@example.com', 
-      joinDate: '2024-10-18', 
-      lastLogin: '2025-03-03', 
-      workoutsCompleted: 210, 
-      subscriptionType: 'Premium', 
-      status: 'Active',
-      progress: 92
-    },
-  ]);
+    setSubscriptionData(newSubscriptionData); // Set the new array directly
+
+  }, [users]);
+
+  useEffect(() => {
+    console.log("SUBSCRIPTION DATA: ", subscriptionData);
+  }, [ subscriptionData]);
+
 
   // Mock data for model usage
   const modelUsageData: ModelUsage[] = [
@@ -169,7 +159,7 @@ const AdminDashboard: React.FC = () => {
     labels: ['Free', 'Premium', 'Enterprise'],
     datasets: [
       {
-        data: [60, 30, 10],
+        data: subscriptionData,
         backgroundColor: ['#8b5cf6', '#6366f1', '#4f46e5'],
         borderWidth: 0,
       },
@@ -177,10 +167,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   // Filter users based on search query
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+
 
   // CRUD operations
   const addUser = (user: Omit<User, 'id'>) => {
@@ -193,13 +180,13 @@ const AdminDashboard: React.FC = () => {
   };
 
   const updateUser = (updatedUser: User) => {
-    setUsers(users.map(user => user.id === updatedUser.id ? updatedUser : user));
+    setUsers(users.map(user => user.email === updatedUser.email ? updatedUser : user));
     setIsModalOpen(false);
     setSelectedUser(null);
   };
 
-  const deleteUser = (id: string) => {
-    setUsers(users.filter(user => user.id !== id));
+  const deleteUser = (email: string) => {
+    setUsers(users.filter(user => user.email !== email));
   };
 
   const openAddUserModal = () => {
@@ -231,7 +218,7 @@ const AdminDashboard: React.FC = () => {
               </div>
               <span className="text-xl font-semibold">FitMaster AI</span>
             </div>
-            <button 
+            <button
               className="text-gray-400 hover:text-white"
               onClick={() => setSidebarOpen(false)}
             >
@@ -273,7 +260,7 @@ const AdminDashboard: React.FC = () => {
               <UsersIcon className="mr-3 h-5 w-5" />
               Dashboard
             </Link>
-            <Link href="#"onClick={() => setCurrentTab('users')} className={`flex items-center px-2 py-2 text-sm font-medium rounded ${currentTab === 'users' ? 'bg-purple-700 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
+            <Link href="#" onClick={() => setCurrentTab('users')} className={`flex items-center px-2 py-2 text-sm font-medium rounded ${currentTab === 'users' ? 'bg-purple-700 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
               <UsersIcon className="mr-3 h-5 w-5" />
               Users
             </Link>
@@ -294,7 +281,7 @@ const AdminDashboard: React.FC = () => {
         {/* Top navigation */}
         <header className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8 bg-gray-800 border-b border-gray-700">
           <div className="flex items-center lg:hidden">
-            <button 
+            <button
               className="text-gray-400 hover:text-white"
               onClick={() => setSidebarOpen(true)}
             >
@@ -306,9 +293,9 @@ const AdminDashboard: React.FC = () => {
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
               </div>
-              <input 
-                type="text" 
-                placeholder="Search users..." 
+              <input
+                type="text"
+                placeholder="Search users..."
                 className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-gray-700 text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -332,19 +319,19 @@ const AdminDashboard: React.FC = () => {
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
             <div className="flex space-x-2">
-              <button 
+              <button
                 className={`px-3 py-2 rounded-md text-sm font-medium ${currentTab === 'overview' ? 'bg-purple-700 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
                 onClick={() => setCurrentTab('overview')}
               >
                 Overview
               </button>
-              <button 
+              <button
                 className={`px-3 py-2 rounded-md text-sm font-medium ${currentTab === 'users' ? 'bg-purple-700 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
                 onClick={() => setCurrentTab('users')}
               >
                 Users
               </button>
-              <button 
+              <button
                 className={`px-3 py-2 rounded-md text-sm font-medium ${currentTab === 'model' ? 'bg-purple-700 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
                 onClick={() => setCurrentTab('model')}
               >
@@ -365,12 +352,12 @@ const AdminDashboard: React.FC = () => {
                       <UsersIcon className="h-6 w-6 text-purple-500" />
                     </div>
                   </div>
-                  <p className="text-3xl font-bold mt-2">1,510</p>
+                  <p className="text-3xl font-bold mt-2">{users.length}</p>
                   <p className="text-sm text-green-400 mt-1">↑ 12% from last month</p>
                 </div>
                 <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-gray-300">Active Workouts</h3>
+                    <h3 className="text-lg font-medium text-gray-300">Total Workouts</h3>
                     <div className="h-10 w-10 rounded-full bg-indigo-600 bg-opacity-25 flex items-center justify-center">
                       <ChartBarIcon className="h-6 w-6 text-indigo-500" />
                     </div>
@@ -378,7 +365,7 @@ const AdminDashboard: React.FC = () => {
                   <p className="text-3xl font-bold mt-2">4,752</p>
                   <p className="text-sm text-green-400 mt-1">↑ 8% from last month</p>
                 </div>
-                <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                {/* <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-medium text-gray-300">API Calls</h3>
                     <div className="h-10 w-10 rounded-full bg-blue-600 bg-opacity-25 flex items-center justify-center">
@@ -387,7 +374,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                   <p className="text-3xl font-bold mt-2">23.1K</p>
                   <p className="text-sm text-green-400 mt-1">↑ 15% from yesterday</p>
-                </div>
+                </div> */}
                 <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-medium text-gray-300">Avg. Completion</h3>
@@ -405,8 +392,8 @@ const AdminDashboard: React.FC = () => {
                 <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                   <h3 className="text-lg font-medium text-gray-300 mb-4">User Growth</h3>
                   <div className="h-72">
-                    <Line 
-                      data={userProgressChartData} 
+                    <Line
+                      data={userProgressChartData}
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
@@ -443,8 +430,8 @@ const AdminDashboard: React.FC = () => {
                 <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                   <h3 className="text-lg font-medium text-gray-300 mb-4">Weekly Workouts</h3>
                   <div className="h-72">
-                    <Bar 
-                      data={workoutCompletionChartData} 
+                    <Bar
+                      data={workoutCompletionChartData}
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
@@ -485,8 +472,8 @@ const AdminDashboard: React.FC = () => {
                 <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                   <h3 className="text-lg font-medium text-gray-300 mb-4">Subscription Distribution</h3>
                   <div className="h-64 flex items-center justify-center">
-                    <Doughnut 
-                      data={subscriptionDistributionData} 
+                    <Doughnut
+                      data={subscriptionDistributionData}
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
@@ -514,20 +501,20 @@ const AdminDashboard: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-gray-800 divide-y divide-gray-700">
-                        {users.slice(0, 5).map((user) => (
-                          <tr key={user.id}>
+                        {filteredUsers.map((user) => (
+                          <tr key={user.email}>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
                                 <div className="h-8 w-8 rounded-full bg-purple-600 flex items-center justify-center">
-                                  <span className="text-sm font-medium">{user.name.charAt(0)}</span>
+                                  <span className="text-sm font-medium">{user.fullName.charAt(0)}</span>
                                 </div>
                                 <div className="ml-4">
-                                  <div className="text-sm font-medium">{user.name}</div>
+                                  <div className="text-sm font-medium">{user.fullName}</div>
                                   <div className="text-sm text-gray-400">{user.email}</div>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">{user.lastLogin}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">{user.status}</td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="w-full bg-gray-700 rounded-full h-2.5">
                                 <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: `${user.progress}%` }}></div>
@@ -549,7 +536,7 @@ const AdminDashboard: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">User Management</h2>
-                <button 
+                <button
                   className="px-4 py-2 bg-purple-600 text-white rounded-md flex items-center hover:bg-purple-700"
                   onClick={openAddUserModal}
                 >
@@ -563,7 +550,6 @@ const AdminDashboard: React.FC = () => {
                     <tr>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Join Date</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Last Login</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Subscription</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
@@ -571,49 +557,46 @@ const AdminDashboard: React.FC = () => {
                   </thead>
                   <tbody className="bg-gray-800 divide-y divide-gray-700">
                     {filteredUsers.map((user) => (
-                      <tr key={user.id}>
+                      <tr key={user.email}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="h-10 w-10 rounded-full bg-purple-600 flex items-center justify-center">
-                              <span className="text-sm font-medium">{user.name.charAt(0)}</span>
+                              <span className="text-sm font-medium">{user.fullName.charAt(0)}</span>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium">{user.name}</div>
+                              <div className="text-sm font-medium">{user.fullName}</div>
                               <div className="text-sm text-gray-400">{user.email}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{user.joinDate}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{user.lastLogin}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{user.RegisterDate}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            user.subscriptionType === 'Premium' ? 'bg-purple-900 text-purple-200' :
+                          <span className={`px-2 py-1 text-xs rounded-full ${user.subscriptionType === 'Premium' ? 'bg-purple-900 text-purple-200' :
                             user.subscriptionType === 'Enterprise' ? 'bg-indigo-900 text-indigo-200' :
-                            'bg-gray-700 text-gray-300'
-                          }`}>
+                              'bg-gray-700 text-gray-300'
+                            }`}>
                             {user.subscriptionType}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            user.status === 'Active' ? 'bg-green-900 text-green-200' :
+                          <span className={`px-2 py-1 text-xs rounded-full ${user.status === 'Active' ? 'bg-green-900 text-green-200' :
                             user.status === 'Inactive' ? 'bg-yellow-900 text-yellow-200' :
-                            'bg-red-900 text-red-200'
-                          }`}>
+                              'bg-red-900 text-red-200'
+                            }`}>
                             {user.status}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <div className="flex space-x-2">
-                            <button 
+                            <button
                               className="p-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
                               onClick={() => openEditUserModal(user)}
                             >
                               <PencilIcon className="h-4 w-4" />
                             </button>
-                            <button 
+                            <button
                               className="p-1 rounded-md bg-red-600 hover:bg-red-700 text-white"
-                              onClick={() => deleteUser(user.id)}
+                              onClick={() => deleteUser(user.email)}
                             >
                               <TrashIcon className="h-4 w-4" />
                             </button>
@@ -636,7 +619,7 @@ const AdminDashboard: React.FC = () => {
                   <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                     <h3 className="text-lg font-medium text-gray-300 mb-4">API Usage Over Time</h3>
                     <div className="h-72">
-                      <Line 
+                      <Line
                         data={{
                           labels: modelUsageData.map(data => data.date),
                           datasets: [
@@ -674,12 +657,12 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                   <h3 className="text-lg font-medium text-gray-300 mb-4">Processing Time</h3>
                   <div className="h-72">
-                    <Line 
+                    <Line
                       data={{
                         labels: modelUsageData.map(data => data.date),
                         datasets: [
@@ -715,11 +698,11 @@ const AdminDashboard: React.FC = () => {
                     />
                   </div>
                 </div>
-                
+
                 <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                   <h3 className="text-lg font-medium text-gray-300 mb-4">Daily Active Users</h3>
                   <div className="h-72">
-                    <Line 
+                    <Line
                       data={{
                         labels: modelUsageData.map(data => data.date),
                         datasets: [
@@ -757,7 +740,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-6">
                 <h3 className="text-lg font-medium text-gray-300 mb-4">Model Usage Details</h3>
                 <div className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
@@ -802,26 +785,26 @@ const AdminDashboard: React.FC = () => {
                 <div className="mt-4 space-y-4">
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-300">Name</label>
-                    <input 
-                      type="text" 
-                      id="name" 
+                    <input
+                      type="text"
+                      id="name"
                       className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500"
                       defaultValue={selectedUser?.name || ''}
                     />
                   </div>
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-300">Email</label>
-                    <input 
-                      type="email" 
-                      id="email" 
+                    <input
+                      type="email"
+                      id="email"
                       className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500"
                       defaultValue={selectedUser?.email || ''}
                     />
                   </div>
                   <div>
                     <label htmlFor="subscription" className="block text-sm font-medium text-gray-300">Subscription</label>
-                    <select 
-                      id="subscription" 
+                    <select
+                      id="subscription"
                       className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500"
                       defaultValue={selectedUser?.subscriptionType || 'Free'}
                     >
@@ -832,8 +815,8 @@ const AdminDashboard: React.FC = () => {
                   </div>
                   <div>
                     <label htmlFor="status" className="block text-sm font-medium text-gray-300">Status</label>
-                    <select 
-                      id="status" 
+                    <select
+                      id="status"
                       className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500"
                       defaultValue={selectedUser?.status || 'Active'}
                     >
@@ -845,14 +828,14 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
               <div className="px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:ml-3 sm:w-auto sm:text-sm"
                 >
                   {modalMode === 'add' ? 'Add User' : 'Save Changes'}
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-600 shadow-sm px-4 py-2 bg-gray-700 text-base font-medium text-gray-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={() => setIsModalOpen(false)}
                 >

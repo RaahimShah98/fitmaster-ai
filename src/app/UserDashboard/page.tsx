@@ -1,21 +1,20 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import UserDashboardHeader from './header';
+import { useRouter } from 'next/navigation';
 
 import UserDashboardMenu from './sideBar';
 import FloatingNav from '@/components/FloatingNav';
 import UserAnayltics from './mainPage.tsx/Analytics';
 import UserSettings from './mainPage.tsx/userSettings';
 import UserGoals from './mainPage.tsx/Goals';
-import LoginForm from '@/app/LoginForm/page';
-import SignupForm from '@/app/SignUp/page';
+
 // import { firebaseConfig } from '@/lib/firebase';
 
 const UserDashboard: React.FC = () => {
 
     // console.log(firebaseConfig)
-
+const router = useRouter()
     const renderPage = () => {
         // console.log(renderPage)
         switch (selectedPage) {
@@ -25,6 +24,12 @@ const UserDashboard: React.FC = () => {
                 return <UserSettings />;
             case "Goals":
                 return <UserGoals />;
+            case "StartWorkout":
+                router.push("/workoutprogress")
+                return
+            case "UploadFood":
+                router.push("/FoodTracking")
+                return
             default:
                 return <UserAnayltics />;
         }

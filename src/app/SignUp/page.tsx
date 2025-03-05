@@ -28,7 +28,7 @@ const SignupForm = () => {
         dob: "",
         weight: "",
         height: "",
-        weightGoal: ""
+        weightGoal: "",
     });
     const [isLoading, setIsLoading] = useState(false);
     const [step, setStep] = useState(1);
@@ -51,7 +51,20 @@ const SignupForm = () => {
                 return "Name and email are required";
             }
             const userRef = doc(db, "user", formData.email); // Set email as document ID
-            const docRef = await setDoc(userRef, { fullName: formData.fullName, email: formData.email, dob: formData.dob, weight: formData.weight, height: formData.height, weight_goal: formData.weightGoal });
+            await setDoc(userRef, {
+                fullName: formData.fullName, // "Raahim Shah"
+                email: formData.email, // "raahimshah98@gmail.com"
+                dob: formData.dob, // "7-Aug-2002"
+                weight: formData.weight, // "102"
+                height: formData.height, // "102"
+                weight_goal: formData.weightGoal, // "Loose"
+                Role: "user", // ""
+                RegisterDate: new Date().toLocaleDateString(), // "05/03/2025"
+                workoutsCompleted: 0, // ""
+                subscriptionType: "free", // ""
+                status: "Active", // ""
+                progress: 0 // ""
+            });
             console.log("User added successfully!", formData.email);
             router.push('/');
 
@@ -61,12 +74,12 @@ const SignupForm = () => {
     }
 
     const checkFirstSection = () => {
-        if(formData.fullName === ""){
+        if (formData.fullName === "") {
             setError('Name is required');
             return;
         }
 
-        if(formData.email === ""){
+        if (formData.email === "") {
             setError('Email is required');
             return;
         }
@@ -220,9 +233,9 @@ const SignupForm = () => {
                         )}
 
                         {step === 2 && (
-                            
+
                             <form onSubmit={handleEmailSignup} className="space-y-4">
-                                 {error && (
+                                {error && (
                                     <Alert variant="destructive">
                                         <AlertCircle className="h-4 w-4" />
                                         <AlertDescription>{error}</AlertDescription>

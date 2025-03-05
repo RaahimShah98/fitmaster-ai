@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { use, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAuth } from '@/context/FirebaseContext';
 import { useRouter } from 'next/navigation';
 
@@ -15,8 +15,8 @@ interface Particle {
 
 export const HeroSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const {user} = useAuth();
-  const email= user?.email || "";
+  const { user } = useAuth();
+  const email = user?.email || "";
   const router = useRouter();
 
   useEffect(() => {
@@ -73,7 +73,7 @@ export const HeroSection = () => {
   }, []);
 
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Particles */}
       <div ref={containerRef} className="absolute inset-0 pointer-events-none" />
 
@@ -102,7 +102,7 @@ export const HeroSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
           className="mt-8 px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full text-white font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all"
-          onClick={() => email != "" ? router.push("workoutprogress"):router.push("/LoginForm")}
+          onClick={() => email != "" ? router.push("workoutprogress") : router.push("/LoginForm")}
         >
           Begin Your Evolution
         </motion.button>
