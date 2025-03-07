@@ -35,10 +35,11 @@ ChartJS.register(
 const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
 
     const [data, setData] = useState<object | null>(null);
+    const [date, setDate] = useState<string>("")
     // const [caloriesBurned, setCaloriesBurned] = useState<number>(0);
     const [caloriesConsumed, setCaloriesConsumed] = useState<number>(0);
-    console.log("USER: ", email)
 
+    console.log("USER: ", email)
     // Fetch user Meal for today
     const getFormattedDateTime = (): string => {
         const now = new Date();
@@ -55,34 +56,28 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
     };
 
     const fetch_user_calories = async () => {
-        const getTime = getFormattedDateTime();
-        const postsRef = collection(db, "food_logs", email, getFormattedDateTime());
-        console.log(postsRef)
-        const querySnapshot = await getDocs(postsRef);
+        try {
+            const postsRef = collection(db, "food_logs", email, getFormattedDateTime());
+            console.log(postsRef)
+            const querySnapshot = await getDocs(postsRef);
 
-        const totalCalories = querySnapshot.docs.reduce((sum, doc) => { return doc.data().content.calories + sum }, 0);
-        console.log("CALORIES: ", totalCalories)
-        setCaloriesConsumed(totalCalories);
+            const totalCalories = querySnapshot.docs.reduce((sum, doc) => { return doc.data().content.calories + sum }, 0);
+            console.log("CALORIES: ", totalCalories)
+            setCaloriesConsumed(totalCalories);
 
-        const documents = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
+            const documents = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
 
-        console.log("Fetched Documents:", documents);
-        // const userRef = doc(db, "food_logs", email);
-        // const userSnap = await getDoc(userRef);
-        // if (!userSnap.exists()) {
-        //     console.log("No such document!");
-        // } else {
-        //     console.log("Document data:", userSnap.data());
-        //     setCaloriesConsumed(userSnap.data().calories);
-        // }
+            console.log("Fetched Documents:", documents);
+        } catch (e) {
+            return
+        }
     }
-
     fetch_user_calories()
 
-    const getDocData = async (email: string) => {
+    const getWorkoutData = async (email: string) => {
         const userRef = doc(db, "user_exercise_data", email);
         // console.log("REF:" , userRef)
         const userSnap = await getDoc(userRef);
@@ -98,21 +93,26 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
 
     useEffect(() => {
         console.log("EMAIL NISIDE: ", email);
-
+        setDate(getFormattedDateTime())
     }, []);
 
-    // RUN AFTER EMAIL IS SET
     useEffect(() => {
-        console.log("EMAIL: ", email);
 
-        const fetchData = async () => {
-            const docData = await getDocData(email); // Wait for the data
-            console.log("Fetched Data:", docData);
-            setData(docData);
-        };
+        fetch_user_calories()
+    }, [date])
 
-        fetchData();
-    }, [email]);
+    // RUN AFTER EMAIL IS SET
+    // useEffect(() => {
+    //     console.log("EMAIL: ", email);
+
+    //     const fetchData = async () => {
+    //         const docData = await getWorkoutData(email); // Wait for the data
+    //         console.log("Fetched Data:", docData);
+    //         setData(docData);
+    //     };
+
+    //     fetchData();
+    // }, [email]);
 
     useEffect(() => {
         // console.log("DATA UPDATED:", data);
@@ -146,16 +146,13 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
     };
 
     // Calorie data
-
-    const test = 2700
-
     const totalCalories = 5050; // Set the total calorie limit
     const exceededCalories = Math.max(0, caloriesConsumed - totalCalories);
     const normalCalories = Math.min(caloriesConsumed, totalCalories);
     const remainingCalories = Math.max(0, totalCalories - caloriesConsumed);
 
     const donutChartDataCalories = {
-        labels: caloriesConsumed > totalCalories? ['Within Limit', 'Exceeded Calories', 'Remaining Calories']:['Within Limit', 'Remaining Calories'],
+        labels: caloriesConsumed > totalCalories ? ['Within Limit', 'Exceeded Calories', 'Remaining Calories'] : ['Within Limit', 'Remaining Calories'],
         datasets: [{
             data: caloriesConsumed > totalCalories
                 ? [normalCalories, exceededCalories, remainingCalories]
@@ -163,8 +160,8 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
             backgroundColor: caloriesConsumed > totalCalories
                 ? ['rgba(35, 143, 102, 0.8)', 'rgb(251, 0, 54 ,0.8)', 'rgba(85, 85, 85, 0.8)']
                 : ['rgba(35, 143, 102, 0.8)', 'rgb(85, 85, 85, 0.8)'],
-            borderColor: caloriesConsumed > totalCalories? ['rgba(35, 143, 102, 0.8)', 'rgb(251, 0, 54 ,0.8)', 'rgba(42, 42, 42, 0.8)']:
-             ['rgba(54, 162, 235, 0.8)', 'rgb(129, 125, 125 , 0.8)',],
+            borderColor: caloriesConsumed > totalCalories ? ['rgba(35, 143, 102, 0.8)', 'rgb(251, 0, 54 ,0.8)', 'rgba(42, 42, 42, 0.8)'] :
+                ['rgba(54, 162, 235, 0.8)', 'rgb(129, 125, 125 , 0.8)',],
             borderWidth: 2,
         }],
     };
@@ -258,7 +255,7 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
                     </div>
                     {/* Weight Tracker */}
                     <div className="p-6  w-full mb-[20px] flex justify-center">
-                        <WeightTracker></WeightTracker>
+                        <WeightTracker email={email}></WeightTracker>
                     </div>
 
                     {/* Bar Chart */}
