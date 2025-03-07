@@ -1,11 +1,10 @@
 
 import React, { useEffect, useState } from 'react';
 import WeightTracker from '../charts/WeightTrackingLineChart';
-import { useAuth } from '@/context/FirebaseContext';
 
 // firestore
 import { db } from '../../../lib/firebase';
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection } from "firebase/firestore";
 
 import {
     Chart as ChartJS,
@@ -19,7 +18,9 @@ import {
 } from 'chart.js';
 
 import { Pie, Bar, Doughnut } from 'react-chartjs-2';
-
+interface UserAnalyticsProps {
+    email: string;
+}
 // Register ChartJS components
 ChartJS.register(
     ArcElement,
@@ -31,13 +32,55 @@ ChartJS.register(
     Legend
 );
 
-const UserAnayltics = () => {
-    const { user } = useAuth();
-    const email = user?.email;
-    // const [email, setEmail] = useState<string | null>(null);
-    const [data, setData] = useState<object | null>(null);
-    console.log("USER: ", user?.email)
+const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
 
+    const [data, setData] = useState<object | null>(null);
+    // const [caloriesBurned, setCaloriesBurned] = useState<number>(0);
+    const [caloriesConsumed, setCaloriesConsumed] = useState<number>(0);
+    console.log("USER: ", email)
+
+    // Fetch user Meal for today
+    const getFormattedDateTime = (): string => {
+        const now = new Date();
+
+        // Get day, month, and year
+        const day = String(now.getDate()).padStart(2, "0");
+        const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+        const year = now.getFullYear();
+
+        // Get total minutes passed since midnight
+        const totalMinutes = now.getHours() * 60 + now.getMinutes();
+
+        return `${day}-${month}-${year}`;
+    };
+
+    const fetch_user_calories = async () => {
+        const getTime = getFormattedDateTime();
+        const postsRef = collection(db, "food_logs", email, getFormattedDateTime());
+        console.log(postsRef)
+        const querySnapshot = await getDocs(postsRef);
+
+        const totalCalories = querySnapshot.docs.reduce((sum, doc) => { return doc.data().content.calories + sum }, 0);
+        console.log("CALORIES: ", totalCalories)
+        setCaloriesConsumed(totalCalories);
+
+        const documents = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        console.log("Fetched Documents:", documents);
+        // const userRef = doc(db, "food_logs", email);
+        // const userSnap = await getDoc(userRef);
+        // if (!userSnap.exists()) {
+        //     console.log("No such document!");
+        // } else {
+        //     console.log("Document data:", userSnap.data());
+        //     setCaloriesConsumed(userSnap.data().calories);
+        // }
+    }
+
+    fetch_user_calories()
 
     const getDocData = async (email: string) => {
         const userRef = doc(db, "user_exercise_data", email);
@@ -103,25 +146,29 @@ const UserAnayltics = () => {
     };
 
     // Calorie data
-    const totalCalorieGoal = 2000;
-    const caloriesConsumed = 1500;
-    const remainingCalories = totalCalorieGoal - caloriesConsumed;
+
+    const test = 2700
+
+    const totalCalories = 5050; // Set the total calorie limit
+    const exceededCalories = Math.max(0, caloriesConsumed - totalCalories);
+    const normalCalories = Math.min(caloriesConsumed, totalCalories);
+    const remainingCalories = Math.max(0, totalCalories - caloriesConsumed);
 
     const donutChartDataCalories = {
-        labels: ['Calories Consumed', 'Remaining Calories'],
+        labels: caloriesConsumed > totalCalories? ['Within Limit', 'Exceeded Calories', 'Remaining Calories']:['Within Limit', 'Remaining Calories'],
         datasets: [{
-            data: [caloriesConsumed, remainingCalories],
-            backgroundColor: [
-                'rgba(75, 192, 192, 0.8)', // Consumed calories - teal
-                'rgba(238, 238, 238, 0.8)', // Remaining calories - light gray
-            ],
-            borderColor: [
-                'rgba(75, 192, 192, 1)',
-                'rgba(238, 238, 238, 1)',
-            ],
-            borderWidth: 1,
+            data: caloriesConsumed > totalCalories
+                ? [normalCalories, exceededCalories, remainingCalories]
+                : [caloriesConsumed, remainingCalories],
+            backgroundColor: caloriesConsumed > totalCalories
+                ? ['rgba(35, 143, 102, 0.8)', 'rgb(251, 0, 54 ,0.8)', 'rgba(85, 85, 85, 0.8)']
+                : ['rgba(35, 143, 102, 0.8)', 'rgb(85, 85, 85, 0.8)'],
+            borderColor: caloriesConsumed > totalCalories? ['rgba(35, 143, 102, 0.8)', 'rgb(251, 0, 54 ,0.8)', 'rgba(42, 42, 42, 0.8)']:
+             ['rgba(54, 162, 235, 0.8)', 'rgb(129, 125, 125 , 0.8)',],
+            borderWidth: 2,
         }],
     };
+
 
     // Sample data for weekly progress
     const barChartData = {
@@ -164,7 +211,7 @@ const UserAnayltics = () => {
 
     const donutOptions = {
         ...chartOptions,
-        cutout: '70%',
+        cutout: '60%',
         plugins: {
             ...chartOptions.plugins,
             tooltip: {
@@ -200,13 +247,14 @@ const UserAnayltics = () => {
                     {/* Donut Chart Calories */}
                     <div className="bg-white p-6 rounded-lg shadow-md w-full mb-[20px]">
                         <h2 className="text-xl font-semibold mb-4">Daily Calorie Tracking</h2>
-                        <div className="h-64 relative">
+                        <div className="h-64 relative flex items-center justify-center">
                             <Doughnut data={donutChartDataCalories} options={donutOptions} />
-                            <div className="absolute inset-0 flex items-center justify-center flex-col">
+                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
                                 <span className="text-3xl font-bold text-gray-800">{caloriesConsumed}</span>
-                                <span className="text-sm text-gray-500">of {totalCalorieGoal} kcal</span>
+                                <span className="text-sm text-gray-500">of {totalCalories} kcal</span>
                             </div>
                         </div>
+
                     </div>
                     {/* Weight Tracker */}
                     <div className="p-6  w-full mb-[20px] flex justify-center">

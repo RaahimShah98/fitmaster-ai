@@ -1,125 +1,230 @@
+// pages/user-settings.tsx
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Camera, Save } from 'lucide-react';
+import Head from 'next/head';
+import { useAuth } from '@/context/FirebaseContext';
 
-const UserSettings = () => {
-  const [user, setUser] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-    password: '••••••••',
-    picture: '/User Dashboard/slide_1_image (6).jpg'
+
+interface UserSettingsProps {
+  email:string
+}
+
+
+
+const UserSettings: React.FC<UserSettingsProps> = ({email}) => {
+  const [formData, setFormData] = useState({
+    fullName: 'John Doe',
+    weight: 75,
+    height: 180,
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [weightUnit, setWeightUnit] = useState('kg');
+  const [heightUnit, setHeightUnit] = useState('cm');
+  const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Here you would typically make an API call to update the user data
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+    setSaved(false);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Validation would go here
+    console.log('Saving user settings:', formData);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
   };
 
   return (
-    <div className="block w-full bg-gray-50 p-8">
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">User Profile</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Profile Picture Section */}
-          <div className="flex flex-col items-center space-y-4">
-            <div className="relative">
-              <img
-                src={user.picture}
-                alt="Profile"
-                className="w-32 h-32 rounded-full object-cover"
-              />
-              <Button
-                variant="secondary"
-                size="icon"
-                className="absolute bottom-0 right-0 rounded-full p-2"
+    <>
+      <Head>
+        <title>User Settings | Fitness Evolution</title>
+        <meta name="description" content="Manage your fitness profile settings" />
+      </Head>
+
+      <div className="min-h-screen bg-black text-white p-6 relative overflow-hidden">
+        {/* Background stars/particles */}
+        {/* <div className="absolute inset-0 opacity-50">
+          {Array.from({ length: 50 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full bg-white w-1 h-1"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                opacity: Math.random() * 0.7 + 0.3,
+              }}
+            />
+          ))}
+        </div> */}
+
+        <div className="min-[75%] mx-auto relative z-10">
+          <h1 className="text-4xl font-bold text-center mb-8 bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent">
+            User Settings
+          </h1>
+
+          <div className="bg-gray-900 bg-opacity-70 rounded-lg p-6 backdrop-blur-sm border border-gray-800">
+            <form onSubmit={handleSubmit}>
+              {/* Full Name */}
+              <div className="mb-4">
+                <label htmlFor="fullName" className="block text-sm font-medium mb-1 text-gray-300">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="fullName"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+               {/* Email */}
+               <div className="mb-4">
+                <label htmlFor="fullName" className="block text-sm font-medium mb-1 text-gray-300">
+                  Email
+                </label>
+                <input
+                  type="text"
+                  id="email"
+                  name="email"
+                  value={email}
+                  readOnly
+                  className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white focus:outline-none cursor-not-allowed"
+                />
+              </div>
+
+              {/* Weight with unit toggle */}
+              <div className= "flex flex-row justify-between items-center flex-wrap">
+                <div className="mb-4 w-[46%]">
+                  <label htmlFor="weight" className="block text-sm font-medium mb-1 text-gray-300">
+                    Weight
+                  </label>
+                  <div className="flex">
+                    <input
+                      type="number"
+                      id="weight"
+                      name="weight"
+                      value={formData.weight}
+                      onChange={handleInputChange}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-l-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <div className="inline-flex">
+                      <button
+                        type="button"
+                        className={`px-3 py-2 border border-gray-700 ${weightUnit === 'kg' ? 'bg-purple-600' : 'bg-gray-800'}`}
+                        onClick={() => setWeightUnit('kg')}
+                      >
+                        kg
+                      </button>
+
+                    </div>
+                  </div>
+                </div>
+
+                {/* Height with unit toggle */}
+                <div className="mb-4 w-[46%]">
+                  <label htmlFor="height" className="block text-sm font-medium mb-1 text-gray-300">
+                    Height
+                  </label>
+                  <div className="flex">
+                    <input
+                      type="number"
+                      id="height"
+                      name="height"
+                      value={formData.height}
+                      onChange={handleInputChange}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-l-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <div className="inline-flex">
+                      <button
+                        type="button"
+                        className={`px-3 py-2 border border-gray-700 ${heightUnit === 'cm' ? 'bg-purple-600' : 'bg-gray-800'}`}
+                        onClick={() => setHeightUnit('cm')}
+                      >
+                        cm
+                      </button>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-700 pt-6 mt-6">
+                <h2 className="text-xl mb-4 text-purple-400">Change Password</h2>
+
+                {/* Current Password */}
+                <div className="mb-4">
+                  <label htmlFor="currentPassword" className="block text-sm font-medium mb-1 text-gray-300">
+                    Current Password
+                  </label>
+                  <input
+                    type="password"
+                    id="currentPassword"
+                    name="currentPassword"
+                    value={formData.currentPassword}
+                    onChange={handleInputChange}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                {/* New Password */}
+                <div className="mb-4">
+                  <label htmlFor="newPassword" className="block text-sm font-medium mb-1 text-gray-300">
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    id="newPassword"
+                    name="newPassword"
+                    value={formData.newPassword}
+                    onChange={handleInputChange}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                {/* Confirm New Password */}
+                <div className="mb-6">
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1 text-gray-300">
+                    Confirm New Password
+                  </label>
+                  <input
+                    type="password"
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <button
+                type="submit"
+                className="w-full py-2 px-4 rounded-md bg-gradient-to-r from-purple-500 to-blue-500 text-white font-medium hover:from-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200"
               >
-                <Camera className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+                Save Changes
+              </button>
 
-          {/* User Details Form */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={user.name}
-                onChange={(e) => setUser({ ...user, name: e.target.value })}
-                disabled={!isEditing}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={user.email}
-                disabled={true}
-                className="bg-gray-50"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                value={user.phone}
-                onChange={(e) => setUser({ ...user, phone: e.target.value })}
-                disabled={!isEditing}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={user.password}
-                onChange={(e) => setUser({ ...user, password: e.target.value })}
-                disabled={!isEditing}
-              />
-            </div>
-
-            <div className="flex justify-end space-x-4 pt-4">
-              {!isEditing ? (
-                <Button
-                  onClick={() => setIsEditing(true)}
-                  variant="outline"
-                >
-                  Edit Profile
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsEditing(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    className="flex items-center gap-2"
-                  >
-                    <Save className="h-4 w-4" />
-                    Save Changes
-                  </Button>
-                </>
+              {/* Success message */}
+              {saved && (
+                <div className="mt-4 text-center text-green-400 bg-green-900 bg-opacity-30 rounded-md p-2">
+                  Settings saved successfully!
+                </div>
               )}
-            </div>
+            </form>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </div>
+    </>
   );
 };
 

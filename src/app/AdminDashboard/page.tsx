@@ -79,6 +79,7 @@ const AdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setfilteredUsers] = useState<User[]>([]);
   const [subscriptionData, setSubscriptionData] = useState<number[]>([]);
+  const [totalWorkouts, setTotalWorkouts] = useState<number>(0);
   //get Users FROM DB
 
   const getDocData = async (): Promise<User[]> => {
@@ -97,6 +98,8 @@ const AdminDashboard: React.FC = () => {
     fetchData();
   }, []);
 
+
+  // run after fetching user from db
   useEffect(() => {
 
     setfilteredUsers(users.filter(user =>
@@ -111,12 +114,23 @@ const AdminDashboard: React.FC = () => {
     );
   
     setSubscriptionData(newSubscriptionData); // Set the new array directly
-
+    
+    let totalWorkouts = 0;
+    users.map(item=>{ 
+      console.log(item)
+      if(item.workoutsCompleted!=null){
+        totalWorkouts += item.workoutsCompleted
+      }
+    })
+    setTotalWorkouts(totalWorkouts)
+    
+    console.log("workout: " , totalWorkouts)
+  
   }, [users]);
 
   useEffect(() => {
     console.log("SUBSCRIPTION DATA: ", subscriptionData);
-  }, [ subscriptionData]);
+  }, [ subscriptionData , totalWorkouts]);
 
 
   // Mock data for model usage
@@ -362,7 +376,7 @@ const AdminDashboard: React.FC = () => {
                       <ChartBarIcon className="h-6 w-6 text-indigo-500" />
                     </div>
                   </div>
-                  <p className="text-3xl font-bold mt-2">4,752</p>
+                  <p className="text-3xl font-bold mt-2">{totalWorkouts}</p>
                   <p className="text-sm text-green-400 mt-1">↑ 8% from last month</p>
                 </div>
                 {/* <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">

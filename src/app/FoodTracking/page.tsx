@@ -1,10 +1,14 @@
 // app/food-tracker/page.tsx
 'use client';
-
+import FloatingNav from '@/components/FloatingNav';
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import FoodList from './FoodList';
-import WebcamCapture from './WebcamCapture';
+import fetchPredictions from './getPrediction';
+import NutritionalDetailsModal from './nutritionDisplay';
+import getFoodItems from './FoodDatabase';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
+import { useAuth } from '@/context/FirebaseContext';
 
 type DetectedFood = {
   id: string;
@@ -14,13 +18,23 @@ type DetectedFood = {
   timestamp: string;
 };
 
+
 export default function FoodTracker() {
+  const { user } = useAuth();
+  const email = user?.email || ""; // Use optional chaining
   const [detectedFoods, setDetectedFoods] = useState<DetectedFood[]>([]);
+
   const [image, setImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isWebcamActive, setIsWebcamActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFood, setSelectedFood] = useState<string | null>(null);  // Selected Food
+
+  const [foodNutrients, setFoodNutrients] = useState<any[]>([]);
+  const [calories, setCalories] = useState<number>(0);
+  const [proteins, setProteins] = useState<number>(0);
+  const [carbs, setCarbs] = useState<number>(0);
+  const [fats, setFats] = useState<number>(0);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -29,7 +43,7 @@ export default function FoodTracker() {
     try {
       setIsProcessing(true);
       setError(null);
-      
+
       // Convert the file to a data URL for preview
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -41,23 +55,6 @@ export default function FoodTracker() {
       const formData = new FormData();
       formData.append('image', file);
 
-      // Send to API for food detection
-      const response = await fetch('/api/detect-food', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Detection failed: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.success) {
-        addDetectedFoods(data.detections);
-      } else {
-        throw new Error(data.error || 'Failed to detect food items');
-      }
     } catch (err: any) {
       console.error('Error processing image:', err);
       setError(err.message || 'Failed to process image');
@@ -66,52 +63,8 @@ export default function FoodTracker() {
     }
   };
 
-  const addDetectedFoods = (foods: any[]) => {
-    const newFoods = foods.map(food => ({
-      id: Math.random().toString(36).substring(2, 9),
-      name: food.name || food.class || 'Unknown food',
-      confidence: food.confidence || food.score || 0,
-      calories: food.calories || calculateEstimatedCalories(food.name || food.class),
-      timestamp: new Date().toISOString()
-    }));
 
-    setDetectedFoods(prev => [...newFoods, ...prev]);
-  };
-
-  const calculateEstimatedCalories = (foodName: string): number => {
-    // This would ideally be replaced with a proper food database lookup
-    const calorieEstimates: Record<string, number> = {
-      'apple': 95,
-      'banana': 105,
-      'orange': 62,
-      'pizza': 285,
-      'burger': 354,
-      'hot dog': 290,
-      'sandwich': 250,
-      'salad': 150,
-      'broccoli': 55,
-      'carrot': 50,
-      'donut': 195,
-      'cake': 350,
-    };
-
-    const key = Object.keys(calorieEstimates).find(
-      k => foodName.toLowerCase().includes(k)
-    );
-    
-    return key ? calorieEstimates[key] : 100; // Default to 100 if unknown
-  };
-
-  const handleCaptureFromWebcam = (capturedImage: string, detections: any[]) => {
-    setImage(capturedImage);
-    addDetectedFoods(detections);
-  };
-
-  const toggleWebcam = () => {
-    setIsWebcamActive(!isWebcamActive);
-    if (image) setImage(null);
-  };
-
+  //Clear Food List
   const clearAll = () => {
     setDetectedFoods([]);
     setImage(null);
@@ -121,104 +74,182 @@ export default function FoodTracker() {
     }
   };
 
-  const removeFoodItem = (id: string) => {
-    setDetectedFoods(prev => prev.filter(item => item.id !== id));
+  //get Predictions for food
+  const getPrediction = async () => {
+    const predictions = await fetchPredictions(image);
+    setDetectedFoods([...predictions.detections])
+    console.log(predictions.detections);
+
+  }
+
+  // Fetch Food Nutrient data
+  const fetchFoodData = async () => {
+    try {
+      const foodItems = await getFoodItems(detectedFoods);
+      console.log("ITEMS DATA: ", foodItems); // Properly logs resolved data
+      setFoodNutrients(foodItems)
+    } catch (error) {
+      console.error("Error fetching food items:", error);
+    }
   };
 
-  // Calculate total calories from all detected foods
-  const totalCalories = detectedFoods.reduce((sum, food) => sum + (food.calories || 0), 0);
-  const calorieGoal = 2000; // Example goal
-  const caloriePercentage = Math.min(100, (totalCalories / calorieGoal) * 100);
-  
-  // Example protein calculation (would need actual data in real app)
-  const totalProtein = Math.round(totalCalories * 0.15 / 4); // Estimating 15% of calories from protein
-  const proteinGoal = 120; // Example goal
-  const proteinPercentage = Math.min(100, (totalProtein / proteinGoal) * 100);
-  
-  // Example water intake (would need actual tracking in real app)
-  const waterIntake = 1.5; // Example in liters
-  const waterGoal = 2.5; // Example goal
-  const waterPercentage = Math.min(100, (waterIntake / waterGoal) * 100);
+  useEffect(() => {
+    console.log("detected: ", detectedFoods)
+    fetchFoodData()
+  }, [detectedFoods])
+
+  // Calculate total calories , Macros
+  const calculateCalories = () => {
+    const totalCalories = foodNutrients.reduce((acc, item) => acc + item.calories, 0);
+    setCalories(totalCalories)
+    console.log("TOTAL : ", totalCalories)
+
+  }
+
+  const calculateProtein = () => {
+    const totalProtein = foodNutrients.reduce((acc, item) => acc + item.macros.protein, 0);
+    setProteins(totalProtein)
+  }
+
+  const calculateCarbs = () => {
+    const totalCarbs = foodNutrients.reduce((acc, item) => acc + item.macros.carbohydrates, 0);
+    setCarbs(totalCarbs)
+  }
+
+  const calculateFats = () => {
+    const totalFats = foodNutrients.reduce((acc, item) => acc + item.macros.fat, 0);
+    setFats(totalFats)
+  }
+
+  useEffect(() => {
+    console.log(foodNutrients)
+    calculateCalories()
+    calculateProtein()
+    calculateCarbs()
+    calculateFats()
+  }, [foodNutrients])
+
+  //Log Meal
+  const getFormattedDateTime = (): string => {
+    const now = new Date();
+
+    // Get day, month, and year
+    const day = String(now.getDate()).padStart(2, "0");
+    const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+    const year = now.getFullYear();
+
+    // Get total minutes passed since midnight
+    const totalMinutes = now.getHours() * 60 + now.getMinutes();
+
+    return `${day}-${month}-${year}`;
+  };
+
+  // Example usage
+  console.log(getFormattedDateTime());
+
+  const logMeal = async () => {
+    console.log(foodNutrients)
+    // if(foodNutrients.length ==0){
+    //   alert("No foods detected")
+    //   return;
+    // }
+    try {
+      // Reference the subcollection (users/{userId}/posts)
+      const postsRef = collection(db, "food_logs", email, getFormattedDateTime());
+      console.log(postsRef)
+      // Add a new document to the subcollection
+      foodNutrients.map(async (food ,index) => {
+        console.log("LOGGING FOOD: ", food.name , index);
+
+        const docRef = await addDoc(postsRef, {
+          content: food,
+        });
+
+        console.log("Food added successfullly:", docRef.id , food.name);
+        alert("Post added successfully!");
+      })
+
+    } catch (error) {
+      console.error("Error adding post:", error);
+    }
+
+
+  }
+
+  //Close Food ITEM
+  const closeModal = () => {
+    setSelectedFood(null);
+  };
 
   return (
-    <div className="min-h-screen bg-[#0f0d1a] py-6 text-white">
-      <header className="max-w-6xl mx-auto px-6 flex justify-between items-center mb-8 border-b border-white/10 pb-5">
-        <div className="flex items-center gap-2">
-          <span className="text-purple-400 text-2xl">◇</span>
-          <span className="text-xl font-bold">NutriTrack AI</span>
-        </div>
-        
-        <nav className="hidden md:flex gap-6">
-          <a href="#" className="text-gray-400 hover:text-white transition-colors">Home</a>
-          <a href="#" className="text-gray-400 hover:text-white transition-colors">Dashboard</a>
-          <a href="#" className="text-gray-400 hover:text-white transition-colors">About Us</a>
-          <a href="#" className="text-gray-400 hover:text-white transition-colors">Blog</a>
-        </nav>
-        
-        <div className="bg-purple-500 text-white px-4 py-2 rounded-full flex items-center gap-2">
-          <span>👤</span>
-          <span>username98</span>
-        </div>
-      </header>
-      
-      <div className="max-w-6xl mx-auto px-6">
+    <div className="relative min-h-screen bg-[#0f0d1a] py-6 text-white">
+      <div className="absolute  inset-0 bg-[#0f0d1a]"></div>
+      <FloatingNav floating={true} />
+
+      <div className="max-w-6xl mx-auto px-6 relative flex-grow pt-20">
         <h1 className="text-3xl font-bold mb-8 text-purple-400">Food Tracking</h1>
-        
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-[#1a1725] rounded-xl p-6">
             <div className="flex items-center gap-2 text-gray-400 mb-2">
               <span>◼</span>
-              <span>Calories Today</span>
+              <span>Calories in your Meal</span>
             </div>
-            <div className="text-2xl font-bold">{totalCalories}/{calorieGoal}</div>
-            <div className="h-1.5 bg-white/10 rounded-full mt-3">
-              <div 
-                className="h-full bg-purple-500 rounded-full"
-                style={{ width: `${caloriePercentage}%` }}
-              ></div>
-            </div>
+            <div className="text-2xl font-bold">{calories}</div>
           </div>
-          
+
           <div className="bg-[#1a1725] rounded-xl p-6">
             <div className="flex items-center gap-2 text-gray-400 mb-2">
               <span>◼</span>
               <span>Protein</span>
             </div>
-            <div className="text-2xl font-bold">{totalProtein}/{proteinGoal}g</div>
+            <div className="text-2xl font-bold">{proteins}/{detectedFoods.length * 100}g</div>
             <div className="h-1.5 bg-white/10 rounded-full mt-3">
-              <div 
+              <div
                 className="h-full bg-purple-500 rounded-full"
-                style={{ width: `${proteinPercentage}%` }}
+                style={{ width: `${(detectedFoods.length > 0 ? (proteins / (detectedFoods.length * 100)) * 100 : 0)}%` }}
               ></div>
             </div>
           </div>
-          
+
           <div className="bg-[#1a1725] rounded-xl p-6">
             <div className="flex items-center gap-2 text-gray-400 mb-2">
               <span>◼</span>
-              <span>Water Intake</span>
+              <span>Carbs</span>
             </div>
-            <div className="text-2xl font-bold">{waterIntake}/{waterGoal}L</div>
+            <div className="text-2xl font-bold">{carbs}/{detectedFoods.length * 100}g</div>
             <div className="h-1.5 bg-white/10 rounded-full mt-3">
-              <div 
+              <div
                 className="h-full bg-purple-500 rounded-full"
-                style={{ width: `${waterPercentage}%` }}
+                style={{ width: `${(detectedFoods.length > 0 ? (carbs / (detectedFoods.length * 100)) * 100 : 0)}%` }}
+              ></div>
+            </div>
+          </div>
+          <div className="bg-[#1a1725] rounded-xl p-6">
+            <div className="flex items-center gap-2 text-gray-400 mb-2">
+              <span>◼</span>
+              <span>Fats</span>
+            </div>
+            <div className="text-2xl font-bold">{fats}/{detectedFoods.length * 100}g</div>
+            <div className="h-1.5 bg-white/10 rounded-full mt-3">
+              <div
+                className="h-full bg-purple-500 rounded-full"
+                style={{ width: `${(detectedFoods.length > 0 ? (fats / (detectedFoods.length * 100)) * 100 : 0)}%` }}
               ></div>
             </div>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             {/* Food Detection Panel */}
             <div className="bg-[#1a1725] rounded-xl p-6 mb-6">
               <h2 className="text-xl font-semibold mb-6">Detect Food</h2>
-              
+
               <div className="flex flex-wrap gap-4 mb-6">
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={isProcessing || isWebcamActive}
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-600 flex items-center transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -226,25 +257,15 @@ export default function FoodTracker() {
                   </svg>
                   Upload Image
                 </button>
-                <input 
-                  type="file" 
+                <input
+                  type="file"
                   ref={fileInputRef}
-                  onChange={handleFileChange} 
-                  accept="image/*" 
-                  className="hidden" 
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
                 />
-                
-                <button
-                  onClick={toggleWebcam}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center transition-colors"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                    <path d="M14 6a2 2 0 00-2 2v4a2 2 0 002 2h4a2 2 0 002-2V8a2 2 0 00-2-2h-4z" />
-                  </svg>
-                  {isWebcamActive ? 'Stop Camera' : 'Start Camera'}
-                </button>
-                
+
+
                 <button
                   onClick={clearAll}
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center transition-colors"
@@ -255,26 +276,20 @@ export default function FoodTracker() {
                   Clear All
                 </button>
               </div>
-              
+
               {error && (
                 <div className="bg-red-900/30 border border-red-800 text-red-300 p-4 rounded-lg mb-4">
                   {error}
                 </div>
               )}
-              
-              {isWebcamActive && (
-                <div className="mb-6">
-                  <WebcamCapture onCapture={handleCaptureFromWebcam} />
-                </div>
-              )}
-              
-              {image && !isWebcamActive && (
+
+              {image && (
                 <div className="mb-6">
                   <div className="relative w-full h-64 bg-black/50 rounded-lg overflow-hidden">
-                    <Image 
-                      src={image} 
-                      alt="Food image" 
-                      layout="fill" 
+                    <Image
+                      src={image}
+                      alt="Food image"
+                      layout="fill"
                       objectFit="contain"
                     />
                     {isProcessing && (
@@ -282,101 +297,68 @@ export default function FoodTracker() {
                         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
                       </div>
                     )}
+
+
+                  </div>
+                  <div className='pt-4'>
+                    <button
+                      onClick={getPrediction}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center transition-colors"
+                    >
+                      Track my Food
+                    </button>
                   </div>
                 </div>
               )}
             </div>
-            
-            {/* Detected Food Items */}
-            <div className="bg-[#1a1725] rounded-xl p-6">
-              <h2 className="text-xl font-semibold mb-4">Detected Food Items</h2>
-              <FoodList items={detectedFoods} onRemove={removeFoodItem} />
-            </div>
+
           </div>
-          
+
           {/* Right Side Panel */}
           <div className="space-y-6">
             {/* Food Details Panel */}
             <div className="bg-[#1a1725] rounded-xl p-6">
               <h2 className="text-xl font-semibold mb-4">Food Details</h2>
-              
+
               {detectedFoods.length > 0 ? (
-                <div>
-                  <div className="mb-4">
-                    <div className="text-gray-400 mb-1">Latest Food</div>
-                    <div className="text-xl font-medium">{detectedFoods[0].name}</div>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <div className="text-gray-400 mb-1">Calories</div>
-                    <div className="flex justify-between mb-1">
-                      <span>Amount</span>
-                      <span>{detectedFoods[0].calories} kcal</span>
-                    </div>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <div className="text-gray-400 mb-1">Confidence</div>
-                    <div className="flex items-center gap-1 mt-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <svg 
-                          key={star}
-                          xmlns="http://www.w3.org/2000/svg" 
-                          className={`h-5 w-5 ${star <= Math.round(detectedFoods[0].confidence * 5) ? 'text-purple-500' : 'text-white/20'}`}
-                          viewBox="0 0 20 20" 
-                          fill="currentColor"
-                        >
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                    </div>
-                  </div>
+                <div className="grid grid-cols-[75%_25%] w-full ">
+                  {/* Table Header */}
+                  <div className="p-2 font-bold border-b border-gray-300" >Food</div>
+                  <div className="p-2 font-bold border-b border-gray-300">Quantity</div>
+                  {/* Table Rows (Example) */}
+                  {detectedFoods.map((food, index) => (
+                    <>
+                      <div key={index} className="p-2 border-b border-gray-200" onClick={() => setSelectedFood(food.label)}>{food.label}</div>
+                      <div className="p-2 border-b border-gray-200">1</div>
+                    </>
+                  ))}
+
                 </div>
               ) : (
                 <div className="text-gray-400 italic">No food detected yet</div>
               )}
             </div>
-            
-            {/* Controls Panel */}
-            <div className="bg-[#1a1725] rounded-xl p-6">
-              <h2 className="text-xl font-semibold mb-4">Controls</h2>
-              
-              <button className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg mb-4 flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                </svg>
-                Start Tracking
-              </button>
-              
-              <button className="w-full border border-purple-600 text-purple-500 py-3 px-4 rounded-lg flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
-                </svg>
-                End Tracking
+
+            {selectedFood && (
+              <NutritionalDetailsModal food={selectedFood} foodNutrients={foodNutrients} onClose={closeModal} />
+            )}
+            <div className='pt-4 w-full'>
+              <button
+                onClick={logMeal}
+                className=" flex items-center justify-center w-full center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center transition-colors"
+              >
+                Log My Meal
               </button>
             </div>
-            
-            {/* Timer Panel */}
-            <div className="bg-[#1a1725] rounded-xl p-6">
-              <h2 className="text-xl font-semibold mb-4">Tracking Time</h2>
-              
-              <div className="flex justify-between items-center">
-                <div className="text-2xl font-bold">00:00</div>
-                <div className="bg-white/10 rounded-full w-10 h-10 flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-            
+
+
             {/* AI Assistant */}
             <div className="mt-6">
               <div className="flex items-center gap-2 text-green-500">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <div>AI Assistant Active</div>
               </div>
-              
+
               <div className="mt-3 bg-green-900/20 border-l-2 border-green-600 p-4 rounded-lg text-green-300">
                 Try adding your meal by uploading a photo or using your camera. I'll help identify the food and estimate calories.
               </div>
