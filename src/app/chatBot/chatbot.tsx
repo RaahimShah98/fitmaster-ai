@@ -39,7 +39,7 @@ const ChatbotInterface = () => {
                     setMessages([
                         {
                             role: 'assistant',
-                            content: 'Hello! I am your FitMaster-AI assistant. How can I help you today?'
+                            content: 'Hello! I am FitMaster-AI. How can I help you today?'
                         }
                     ]);
                 } else {
@@ -166,7 +166,7 @@ const ChatbotInterface = () => {
                 {/* Messages Container */}
                 <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
                     <div className="bg-gray-100 rounded-lg p-4 mb-4">
-                        <h1 className="text-2xl font-bold text-center mb-2">FitMaster-AI Assistant</h1>
+                        <h1 className="text-2xl font-bold text-center mb-2">FitMaster-AI</h1>
                         <p className="text-center text-gray-700">Ask me anything about Nutrition or Workout</p>
                     </div>
 

@@ -4,11 +4,11 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { User, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { db } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
-// Firestore
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
+// Firestore
 interface AuthContextType {
-  user: User | null;
+  user: User;
   loading: boolean;
   logout: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -33,8 +33,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    console.log("CALLED")
-    addDataToFireStore()
+    if (user && user.email) {  // Only call if user exists
+      console.log("CALLED");
+      addDataToFireStore();
+    }
   }, [user]);
 
   //Register User
@@ -65,21 +67,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  //add user detail to firebase
   async function addDataToFireStore() {
-    console.log(user);
     try {
-
       if (!user || !user.email) {
         console.error("User is not defined or missing email!");
         return;
       }
+      const userRef = doc(db, "user", user?.email);
+      const userDoc = await getDoc(userRef);
 
-      const userRef = doc(db, "user", user?.email); // Set email as document ID
-      await setDoc(userRef, {
-        fullName: user?.email.split("@")[0], email: user?.email, dob: "", weight: "", height: "",
-        weight_goal: "", Role: "user", RegisterDate: new Date().toLocaleDateString()
-      });
-      console.log("User added successfully!", user?.email);
+      if (!userDoc.exists()) {
+        const userSetDoc = doc(db, "user", user?.email); // Set email as document ID
+
+        await setDoc(userSetDoc, {
+          fullName: user?.email.split("@")[0], email: user?.email, dob: "", weight: "", height: "",
+          weight_goal: "", Role: "user" ,status:"Active", TC:true , RegisterDate: new Date().toLocaleDateString()
+        });
+        console.log("User added successfully!", user?.email);
+      }
+      else{
+        console.log("USER ALREADY EXISTS IN DB: " , user?.email)
+      }
     } catch (error) {
       console.log(error);
     }
@@ -89,10 +98,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     const User = await signInWithPopup(auth, provider);
-
-    console.log(User.user);
     setUser(User.user);
-    
+
+
   }
 
   //Logout User

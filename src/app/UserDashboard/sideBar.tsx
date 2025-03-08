@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { XMarkIcon, ChartBarIcon, CogIcon, CameraIcon, HeartIcon, FireIcon } from "@heroicons/react/24/outline";
-
+import { XMarkIcon, ChartBarIcon, CogIcon, CameraIcon, HeartIcon } from "@heroicons/react/24/outline";
+import { Move } from "lucide-react";
 interface UserDashboardMenuProps {
   setSelectedPage: (page: string) => void;
 }
@@ -40,7 +40,7 @@ const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({ setSelectedPage }
         <div className="fixed inset-0 bg-gray-800 bg-opacity-75" onClick={() => setSidebarOpen(false)}></div>
         <div className="fixed inset-y-0 left-0 flex flex-col w-64 max-w-xs bg-gray-900 border-r border-gray-700 text-white">
           <div className="flex items-center justify-between h-16 px-4 border-b border-gray-700">
-            <span className="text-xl font-semibold">FitMaster AI</span>
+            <span className="text-xl font-semibold"><Move className="h-8 w-8 text-purple-300" />FitMaster AI</span>
             <button className="text-gray-400 hover:text-white" onClick={() => setSidebarOpen(false)}>
               <XMarkIcon className="h-6 w-6" />
             </button>
