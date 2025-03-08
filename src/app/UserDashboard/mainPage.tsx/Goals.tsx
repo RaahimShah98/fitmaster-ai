@@ -2,11 +2,13 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import WeightTracker from '../charts/WeightTrackingLineChart';
-
-const UserGoals: React.FC = () => {
+interface goalsProps{
+    email:string;
+}
+const UserGoals: React.FC<goalsProps> = ({email}) => {
     return (
         <div className='flex flex-col w-full items-center justify-center min-h-screen'>
-            <WeightTracker />
+            <WeightTracker email={email}/>
             <div className='mt-[10px] w-full flex justify-center'>
                 <Card className="w-full max-w-2xl p-[5px] pt-[10px] pl-[10[x]">
                     <CardTitle>Weight Goals</CardTitle>

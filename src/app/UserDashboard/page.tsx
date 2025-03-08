@@ -12,43 +12,51 @@ import { useAuth } from '@/context/FirebaseContext';
 // import { firebaseConfig } from '@/lib/firebase';
 
 const UserDashboard: React.FC = () => {
-    const {user} = useAuth();
+    const { user } = useAuth();
     const email = user?.email || ""; // Use optional chaining
-
-    // console.log(firebaseConfig)
-const router = useRouter()
-    const renderPage = () => {
-        // console.log(renderPage)
-        switch (selectedPage) {
-            case "Analytics":
-                return <UserAnayltics email={email}/>;
-            case "Settings":
-                return <UserSettings email={email}/>;
-            case "Goals":
-                return <UserGoals />;
-            case "StartWorkout":
-                router.push("/workoutprogress")
-                return
-            case "UploadFood":
-                router.push("/FoodTracking")
-                return
-            default:
-                return <UserAnayltics email={email}/>;
-        }
-    };
-
     const [selectedPage, setSelectedPage] = useState("Analytics");
 
-    return (
-        <div className='flex flex-row w-full'>
-            <FloatingNav />
-            <div className=' w-full flex flow-row relative top-19 pt-16  bg-gray-800 '>
-                <UserDashboardMenu setSelectedPage={setSelectedPage} />
-                <div className=" w-full">{renderPage()}</div>
-            </div>
+    const router = useRouter()
+    useEffect(()=>{
+        if (!user) {
+            console.log("USER NOT FOUND")
+            // router.push("/")
+        }
+    },[])
+   
+    // console.log(firebaseConfig)
+        const renderPage = () => {
+            // console.log(renderPage)
+            switch (selectedPage) {
+                case "Analytics":
+                    return <UserAnayltics email={email} />;
+                case "Settings":
+                    return <UserSettings email={email} />;
+                case "Goals":
+                    return <UserGoals email={email} />;
+                case "StartWorkout":
+                    router.push("/workoutprogress")
+                    return
+                case "UploadFood":
+                    router.push("/FoodTracking")
+                    return
+                default:
+                    return <UserAnayltics email={email} />;
+            }
+        };
 
-        </div>
-    );
+
+
+        return (
+            <div className='flex flex-row w-full'>
+                <FloatingNav />
+                <div className=' w-full flex flow-row relative top-19 pt-16  bg-gray-800 '>
+                    <UserDashboardMenu setSelectedPage={setSelectedPage} />
+                    <div className=" w-full">{renderPage()}</div>
+                </div>
+
+            </div>
+        );
 };
 
 export default UserDashboard;

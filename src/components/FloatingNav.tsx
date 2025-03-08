@@ -9,6 +9,7 @@ import { useAuth } from '@/context/FirebaseContext';
 
 interface FloatingNavProps {
   setLoginPage: (page: string) => void;
+  floating:boolean;
 }
 
 
@@ -21,7 +22,6 @@ const FloatingNav: React.FC<FloatingNavProps> = ({ setLoginPage , floating =true
   const router = useRouter()
   const email = user?.email || ""; // Use optional chaining
 
-  // console.log("EMAIL: ", email);
 
 
   const DropDownItems = [{ name: "Profile", action: () => reDirect() }, { name: "Start Workout", action: () => startWorkout() }, { name: "Track Food", action: () => trackFood() }, { name: "Logout", action: () => handleSignOut() }];
@@ -68,38 +68,6 @@ const FloatingNav: React.FC<FloatingNavProps> = ({ setLoginPage , floating =true
           </Link>
         </div>
 
-        {/* Hamburger Button (Mobile View)
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="md:hidden w-10 h-10 flex items-center justify-center bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
-        >
-          <span className="sr-only">Toggle Navigation</span>
-          <div className="relative">
-            {isExpanded ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="block w-6 h-[2px] bg-white rotate-45 transform"></span>
-                <span className="block w-6 h-[2px] bg-white -rotate-45 transform absolute"></span>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                <span className="block w-6 h-[2px] bg-white"></span>
-                <span className="block w-6 h-[2px] bg-white"></span>
-                <span className="block w-6 h-[2px] bg-white"></span>
-              </div>
-            )}
-          </div>
-        </button> */}
-
-       
-        {/* {email == "" && <Link
-          href={"/LoginForm"}
-          onClick={() => setLoginPage('logIn')}
-          className="md:hidden bg-purple-500 hover:bg-purple-400 text-white px-6 py-2 rounded-full 
-          transition-all duration-300 hover:scale-105"
-        >
-          Sign in
-        </Link>
-        } */}
 
         {email == "" && <Link
           href={"/LoginForm"}

@@ -75,9 +75,11 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
             return
         }
     }
+
     fetch_user_calories()
 
     const getWorkoutData = async (email: string) => {
+        try{
         const userRef = doc(db, "user_exercise_data", email);
         // console.log("REF:" , userRef)
         const userSnap = await getDoc(userRef);
@@ -89,6 +91,9 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
             console.log("HELLO")
             return userSnap.data();
         }
+    }catch(e){
+        return
+    }
     }
 
     useEffect(() => {
@@ -102,17 +107,17 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
     }, [date])
 
     // RUN AFTER EMAIL IS SET
-    // useEffect(() => {
-    //     console.log("EMAIL: ", email);
+    useEffect(() => {
+        console.log("EMAIL: ", email);
 
-    //     const fetchData = async () => {
-    //         const docData = await getWorkoutData(email); // Wait for the data
-    //         console.log("Fetched Data:", docData);
-    //         setData(docData);
-    //     };
+        const fetchData = async () => {
+            const docData = await getWorkoutData(email); // Wait for the data
+            console.log("Fetched Data:", docData);
+            setData(docData);
+        };
 
-    //     fetchData();
-    // }, [email]);
+        fetchData();
+    }, [email]);
 
     useEffect(() => {
         // console.log("DATA UPDATED:", data);
@@ -229,61 +234,68 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
             y: {
                 beginAtZero: true,
                 ticks: {
-                    stepSize: 1,
+                    stepSize: 2,
                 },
             },
         },
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-6xl mx-auto space-y-8">
-                <h1 className="text-3xl font-bold text-gray-800 mb-8">Exercise Progress Dashboard</h1>
+        <div className="flex min-w-screen min-h-screen pb-10 bg-gray-900 text-white">
+            <div className="min-w-screen max-w-6xl mx-auto space-y-8 w-[100%]">
+                <h1 className="text-3xl font-bold  mb-8">Exercise Progress Dashboard</h1>
 
-                <div className="flex flex-row  flex-wrap space-x-8 justify-start">
-                    {/* Donut Chart Calories */}
-                    <div className="bg-white p-6 rounded-lg shadow-md w-full mb-[20px]">
-                        <h2 className="text-xl font-semibold mb-4">Daily Calorie Tracking</h2>
-                        <div className="h-64 relative flex items-center justify-center">
-                            <Doughnut data={donutChartDataCalories} options={donutOptions} />
-                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                                <span className="text-3xl font-bold text-gray-800">{caloriesConsumed}</span>
-                                <span className="text-sm text-gray-500">of {totalCalories} kcal</span>
+                <div className="flex flex-col flex-wrap ">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Daily Calorie Tracking */}
+                        <div className="bg-black/50 p-6 rounded-lg shadow-md w-full md:w-[100%] mb-[20px]">
+                            <h2 className="text-xl font-semibold mb-4">Daily Calorie Tracking</h2>
+                            <div className="h-64 relative flex items-center justify-center">
+                                <Doughnut data={donutChartDataCalories} options={donutOptions} />
+                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                                    <span className="text-3xl font-bold ">{caloriesConsumed}</span>
+                                    <span className="text-sm ">of {totalCalories} kcal</span>
+                                </div>
                             </div>
                         </div>
 
-                    </div>
-                    {/* Weight Tracker */}
-                    <div className="p-6  w-full mb-[20px] flex justify-center">
-                        <WeightTracker email={email}></WeightTracker>
-                    </div>
+                        {/* Weight Tracker */}
 
-                    {/* Bar Chart */}
-                    <div className="bg-white p-6 rounded-lg shadow-md w-[30%]">
-                        <h2 className="text-xl font-semibold mb-4">Weekly Exercise Activity</h2>
-                        <div className="h-64">
-                            <Bar data={barChartData} options={barChartOptions} />
+                        <div className="bg-black/50 p-6 rounded-lg shadow-md w-full md:w-[100%] mb-[20px]">
+                            <WeightTracker email={email} />
                         </div>
                     </div>
 
-                    {/* Pie Chart */}
-                    <div className="bg-white p-6 rounded-lg shadow-md w-[30%]">
-                        <h2 className="text-xl font-semibold mb-4">Exercise Sets Distribution</h2>
-                        <div className="h-64">
-                            <Pie data={pieChartData} options={chartOptions} />
+                    {/* Lower Chart */}
+                    <div className="min-w-full grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Bar Chart */}
+                        <div className="w-full bg-black/50 p-6 rounded-lg shadow-md">
+                            <h2 className="text-xl font-semibold mb-4">Weekly Exercise Activity</h2>
+                            <div className="h-64">
+                                <Bar data={barChartData} options={barChartOptions} />
+                            </div>
                         </div>
-                    </div>
+
+                        {/* Pie Chart */}
+                        <div className="w-full bg-black/50 p-6 rounded-lg shadow-md ">
+                            <h2 className="text-xl font-semibold mb-4">Exercise Sets Distribution</h2>
+                            <div className="h-64">
+                                <Pie data={pieChartData} options={chartOptions} />
+                            </div>
+                        </div>
 
 
 
-                    {/* Donut Chart */}
-                    <div className="bg-white p-6 rounded-lg shadow-md w-[30%]">
-                        <h2 className="text-xl font-semibold mb-4">Exercise Form Accuracy</h2>
-                        <div className="h-64">
-                            <Doughnut data={donutChartData} options={chartOptions} />
+                        {/* Donut Chart */}
+                        <div className="w-full bg-black/50 p-6 rounded-lg shadow-md ">
+                            <h2 className="text-xl font-semibold mb-4">Exercise Form Accuracy</h2>
+                            <div className="h-64">
+                                <Doughnut data={donutChartData} options={chartOptions} />
+                            </div>
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     );

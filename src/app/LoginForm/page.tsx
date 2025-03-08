@@ -5,35 +5,38 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useState } from 'react';
+import { useState , useEffect} from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 // Firebase
 import { useAuth } from '../../context/FirebaseContext';
-import { Router } from 'lucide-react';
-
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [invalid , setInvalid] = useState(false)
   const { signIn , signInWithGoogle } = useAuth();
 
   const router = useRouter();
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
-    setIsLoading(false);
+    setIsLoading(true);
 
     try {
-      // Here you would typically make an API call to your auth endpoint
-      // console.log('Logging in with:', { email, password });
-
       const authenticate = await signIn(email, password)
       console.log(authenticate)
-      router.push('/')
+      if(authenticate === "auth/invalid-credential"){
+        console.log("Invalid Credentials")
+        setInvalid(true)
+        console.log(invalid)
+      }else{
+        setInvalid(false)
+        // router.push('/')
+      }
 
     } catch (error) {
       console.error('Login failed:', error);
@@ -42,12 +45,13 @@ const LoginForm = () => {
     }
   };
 
+
   const handleGoogleLogin = async () => {
     try {
       // Here you would typically initiate Google OAuth flow
       await signInWithGoogle()
       console.log('Logging in with Google');
-      router.push('/')
+      // router.push('/')
     } catch (error) {
       console.error('Google login failed:', error);
     }
@@ -94,6 +98,7 @@ const LoginForm = () => {
               </span>
             </div>
           </div>
+          {invalid && <span className='w-full flex justify-center bg-red-100 br-10 p-2'>Invalid Credentials</span>}
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -103,6 +108,7 @@ const LoginForm = () => {
                 placeholder="m@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className={`${invalid && email.length==0 ? "bg-red-200":"bg-white"} text-black`}
                 required
               />
             </div>
@@ -116,8 +122,10 @@ const LoginForm = () => {
               <Input
                 id="password"
                 type="password"
+                placeholder='*********'
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className={`${invalid && email.length==0 ? "bg-red-200":"bg-white"} text-black`}
                 required
               />
             </div>
