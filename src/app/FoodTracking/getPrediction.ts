@@ -4,7 +4,7 @@ const fetchPredictions = async (base64Image: string) => {
     console.log("Sending base64 image for prediction");
     console.log(base64Image);
     try {
-        const response = await fetch("https://5558-202-165-230-70.ngrok-free.app/detect/base64/", {
+        const response = await fetch("https://20ef-202-165-230-70.ngrok-free.app/detect/base64/", {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json',

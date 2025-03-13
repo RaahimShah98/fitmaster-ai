@@ -267,7 +267,7 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
                     </div>
 
                     {/* Lower Chart */}
-                    <div className="min-w-full grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="min-w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Bar Chart */}
                         <div className="w-full bg-black/50 p-6 rounded-lg shadow-md">
                             <h2 className="text-xl font-semibold mb-4">Weekly Exercise Activity</h2>
@@ -277,12 +277,12 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
                         </div>
 
                         {/* Pie Chart */}
-                        <div className="w-full bg-black/50 p-6 rounded-lg shadow-md ">
+                        {/* <div className="w-full bg-black/50 p-6 rounded-lg shadow-md ">
                             <h2 className="text-xl font-semibold mb-4">Exercise Sets Distribution</h2>
                             <div className="h-64">
                                 <Pie data={pieChartData} options={chartOptions} />
                             </div>
-                        </div>
+                        </div> */}
 
 
 

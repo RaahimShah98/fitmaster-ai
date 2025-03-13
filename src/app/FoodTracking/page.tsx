@@ -1,5 +1,6 @@
 // app/food-tracker/page.tsx
 'use client';
+import React from 'react';
 import FloatingNav from '@/components/FloatingNav';
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
@@ -7,7 +8,7 @@ import fetchPredictions from './getPrediction';
 import NutritionalDetailsModal from './nutritionDisplay';
 import getFoodItems from './FoodDatabase';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import { useAuth } from '@/context/FirebaseContext';
 
 type DetectedFood = {
@@ -318,7 +319,7 @@ export default function FoodTracker() {
           <div className="space-y-6">
             {/* Food Details Panel */}
             <div className="bg-[#1a1725] rounded-xl p-6">
-              <h2 className="text-xl font-semibold mb-4">Food Details</h2>
+              <h2 className="text-xl font-semibold mb-4">Food Items</h2>
 
               {detectedFoods.length > 0 ? (
                 <div className="grid grid-cols-[75%_25%] w-full ">
@@ -327,10 +328,10 @@ export default function FoodTracker() {
                   <div className="p-2 font-bold border-b border-gray-300">Quantity</div>
                   {/* Table Rows (Example) */}
                   {detectedFoods.map((food, index) => (
-                    <>
-                      <div key={index} className="p-2 border-b border-gray-200" onClick={() => setSelectedFood(food.label)}>{food.label}</div>
+                    <React.Fragment key={index}>
+                      <div className="p-2 border-b border-gray-200" onClick={() => setSelectedFood(food.label)}>{food.label}</div>
                       <div className="p-2 border-b border-gray-200">1</div>
-                    </>
+                    </ React.Fragment>
                   ))}
 
                 </div>

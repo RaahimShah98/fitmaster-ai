@@ -35,7 +35,7 @@ const LoginForm = () => {
         console.log(invalid)
       }else{
         setInvalid(false)
-        // router.push('/')
+        router.push('/')
       }
 
     } catch (error) {
@@ -51,7 +51,7 @@ const LoginForm = () => {
       // Here you would typically initiate Google OAuth flow
       await signInWithGoogle()
       console.log('Logging in with Google');
-      // router.push('/')
+      router.push('/')
     } catch (error) {
       console.error('Google login failed:', error);
     }

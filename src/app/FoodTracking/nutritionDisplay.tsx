@@ -2,40 +2,43 @@
 
 import React from 'react';
 
-interface NutritionalData {
-  name: string;
-  calories: number;
-  macros: {
-    carbohydrates: number;
-    protein: number;
-    fat: number;
-    fiber: number;
-  };
-  micros: {
-    vitaminA: number;
-    vitaminC: number;
-    calcium: number;
-    iron: number;
-    sodium: number;
-    potassium: number;
-  };
-}
+// FORMAT TO ADD FOOD INTO DATABASE
+// interface NutritionalData {
+//   name: string;
+//   calories: number;
+//   macros: {
+//     carbohydrates: number;
+//     protein: number;
+//     fat: number;
+//     fiber: number;
+//   };
+//   micros: {
+//     vitaminA: number;
+//     vitaminC: number;
+//     calcium: number;
+//     iron: number;
+//     sodium: number;
+//     potassium: number;
+//   };
+// }
 
 interface NutritionalDetailsModalProps {
   food: string;
-  foodNutrients:[];
+  foodNutrients: [];
   onClose: () => void;
 }
 
-const NutritionalDetailsModal: React.FC<NutritionalDetailsModalProps> = ({ food , foodNutrients , onClose }) => {
-    console.log(food)
-    console.log(foodNutrients)
-    const foodData = foodNutrients.length > 0 ? foodNutrients[0] : {
-        name: 'Food Not Found',
-        calories: 0,
-        macros: { carbohydrates: 0, protein: 0, fat: 0, fiber: 0 },
-        micros: { vitaminA: 0, vitaminC: 0, calcium: 0, iron: 0, sodium: 0, potassium: 0 },
-      };
+const NutritionalDetailsModal: React.FC<NutritionalDetailsModalProps> = ({ food, foodNutrients, onClose }) => {
+  console.log(food)
+  console.log(foodNutrients)
+
+
+  const foodData = foodNutrients.length > 0 ? foodNutrients.filter((item)=>item?.name==food)[0] : {
+    name: 'Food Not Found',
+    calories: 0,
+    macros: { carbohydrates: 0, protein: 0, fat: 0, fiber: 0 },
+    micros: { vitaminA: 0, vitaminC: 0, calcium: 0, iron: 0, sodium: 0, potassium: 0 },
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">

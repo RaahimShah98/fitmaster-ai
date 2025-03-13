@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { db } from '@/lib/firebase';
+import { setDoc, doc, getDoc } from 'firebase/firestore';
+import { useAuth } from '@/context/FirebaseContext';
 
 interface Message {
     role: 'user' | 'assistant';
     content: string;
+    isFormatted?: boolean;
 }
-
 
 const ChatbotInterface = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -13,10 +16,14 @@ const ChatbotInterface = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-
+    const chatContainerRef = useRef<HTMLDivElement>(null);
+    const { user } = useAuth();
+    const email = user?.email || "";
+    // console.log("email: " , email)
     const toggleChat = () => {
         setIsOpen(!isOpen);
     };
+
     // Initialize the assistant when the component mounts
     useEffect(() => {
         const initializeAssistant = async () => {
@@ -55,36 +62,133 @@ const ChatbotInterface = () => {
         initializeAssistant();
     }, []);
 
+    // Set up event listener for plan button clicks
+    useEffect(() => {
+        // Function to handle button clicks
+        const handleFollowPlanClick = (event: Event) => {
+            const customEvent = event as CustomEvent;
+            if (customEvent.detail) {
+                const { key, response } = customEvent.detail;
+                log_user_preference(key, response, email);
+            }
+        };
+
+        // Add event listener
+        document.addEventListener('followPlanClick', handleFollowPlanClick);
+
+        // Clean up event listener when component unmounts
+        return () => {
+            document.removeEventListener('followPlanClick', handleFollowPlanClick);
+        };
+    }, []);
+
     // Scroll to the bottom when messages change
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    //Format the output given by the assistant
+    useEffect(() => {
+
+    }, [email]);
+
+    // Format the output given by the assistant
     function formatNutritionPlan(response: string): string {
-        const lines: string[] = response.split('\n');
-        let formattedHtml: string = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto;'>";
-        let currentCategory: string = "";
+        console.log(response);
+        let formattedHTML: string = "";
+        try {
+            const json = JSON.parse(response);
+            const key = Object.keys(json)[0]; // Extracts "nutrition_plan" or "workout_plan"
+            const buttonId = `follow-btn-${Date.now()}`;
+            console.log("JSON: ", key, json);
 
-        lines.forEach(line => {
-            line = line.trim();
-            if (!line) return;
+            formattedHTML = `<div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto;'>
+                                <table border='1' cellspacing='0' cellpadding='8' style='width: 100%; text-align: left; border-collapse: collapse;'>
+                                    <tr>
+                                        <th>Day</th>
+                                        <th>${key === "nutrition_plan" ? "Food" : "Exercise"}</th>
+                                        ${key === "nutrition_plan" ? "<th>Calories per 100g</th>" : "<th>Sets</th>"}
+                                        ${key === "workout_plan" ? "<th>Reps</th>" : ""}
+                                    </tr>`;
 
-            if (line.includes('**')) {
-                // It's a category header
-                currentCategory = line.replace(/\*\*/g, '');
-                formattedHtml += `<h2 style='color:rgb(8, 8, 8); border-bottom: 2px solid #ddd; padding-bottom: 5px;'><strong>${currentCategory}</strong></h2>`;
-            } else if (line.includes(':')) {
-                // It's a food item with calories
-                let [item, calories] = line.split(':');
-                formattedHtml += `<p><strong>${item.trim()}</strong>: ${calories.trim()}</p>`;
-            }
-        });
+            formattedHTML += json[key].map((item: any) => `
+                                    <tr>
+                                        <td>${item.day}</td>
+                                        <td>${key === "nutrition_plan" ? item.food : item.exercise}</td>
+                                        ${key === "nutrition_plan" ? `<td>${item.calories_per_100g}</td>` : `<td>${item.sets}</td>`}
+                                        ${key === "workout_plan" ? `<td>${item.reps}</td>` : ""}
+                                    </tr>`).join("");
 
-        formattedHtml += "</div>";
-        return formattedHtml;
+            formattedHTML += `</table>
+                                    <button id="${buttonId}" data-key="${key}" data-response='${response}' class="follow-plan-btn bg-purple-500 w-full p-4 mt-4 text-white">
+                                    <strong>Follow ${key.split("_")[0]} ${key.split("_")[1]}</strong>
+                                </button>
+                                    </div>`;
+        } catch (e) {
+            console.log("Not JSON: ", response);
+            formattedHTML = `<div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto;'>
+                                <p>${JSON.parse(response)["response"]}</p>
+                            </div>`;
+        }
+        return formattedHTML;
     }
 
+    // Log User Workout/Diet plan to Database
+    const log_user_preference = async (key: string, response: string, Email: string) => {
+        console.log("Email:", Email);
+        // Add your database logic here
+        // Uncomment the following when ready to use
+
+        let data_base_name = "";
+        if (key === "nutrition_plan") {
+            data_base_name = "diet_plan";
+        }
+        else if (key === "workout_plan") {
+            data_base_name = "workout_plan";
+        }
+
+        try {
+            // Reference to the document
+            const json = JSON.parse(response);
+
+            console.log("JSON : ", json[key])
+            const postRef = doc(db, data_base_name, Email);
+            // // Set the document with provided data
+            await setDoc(postRef, { data_base_name: json[key] });
+
+            console.log("Document successfully written!");
+        } catch (error) {
+            console.error("Error writing document: ", error);
+        }
+
+    };
+
+    // Add event delegation for button clicks
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const button = target.closest('.follow-plan-btn') as HTMLButtonElement;
+
+            if (button) {
+                const key = button.getAttribute('data-key') || '';
+                const response = button.getAttribute('data-response') || '';
+                log_user_preference(key, response, email);
+            }
+        };
+
+        // Add click listener to the chat container
+        const chatContainer = chatContainerRef.current;
+        if (chatContainer) {
+            chatContainer.addEventListener('click', handleClick);
+        }
+
+        return () => {
+            if (chatContainer) {
+                chatContainer.removeEventListener('click', handleClick);
+            }
+        };
+    }, [email]);
+
+    // Send Message
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -106,17 +210,13 @@ const ChatbotInterface = () => {
             });
 
             const data = await response.json();
-            console.log("data", data.response.content[0]?.text?.value)
+            // console.log("data", data.response.content[0]?.text?.value)
             if (data.success) {
-                // Process the assistant response
-                // The response will have content in a different format than our simple Message type
-                // We need to extract just the text content
                 const formattedData = formatNutritionPlan(data.response.content[0]?.text?.value);
-                // const assistantContent = data.response.content[0]?.text?.value || 'Sorry, I couldn\'t generate a response';
                 const assistantContent = formattedData || 'Sorry, I couldn\'t generate a response';
                 setMessages(prev => [
                     ...prev,
-                    { role: 'assistant', content: assistantContent , isFormatted: true }
+                    { role: 'assistant', content: assistantContent, isFormatted: true }
                 ]);
             } else {
                 console.error('Failed to get response:', data.error);
@@ -139,7 +239,8 @@ const ChatbotInterface = () => {
     return (
         <>
             {/* Chat Interface */}
-            <div
+
+            {email && <div
                 className={`fixed bottom-24 right-6 w-80 md:w-96 bg-white rounded-lg shadow-xl transition-all duration-300 ease-in-out z-40 flex flex-col max-h-96 ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
                 style={{ transform: isOpen ? 'translateY(0)' : 'translateY(20px)' }}
             >
@@ -170,7 +271,7 @@ const ChatbotInterface = () => {
                         <p className="text-center text-gray-700">Ask me anything about Nutrition or Workout</p>
                     </div>
 
-                    <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
+                    <div className="flex-1 p-4 overflow-y-auto bg-gray-50" ref={chatContainerRef}>
                         {messages.map((message, index) => (
                             <div
                                 key={index}
@@ -229,9 +330,10 @@ const ChatbotInterface = () => {
                     </button>
                 </form>
             </div>
+            }
 
             {/* Floating Chat Icon */}
-            <div
+            {email && <div
                 onClick={toggleChat}
                 className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110 active:scale-95 z-50"
                 style={{
@@ -266,8 +368,12 @@ const ChatbotInterface = () => {
                     </span>
                 )}
             </div>
+            }
         </>
+
+
     );
+
 };
 
 export default ChatbotInterface;
