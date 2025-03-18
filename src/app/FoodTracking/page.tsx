@@ -145,9 +145,6 @@ export default function FoodTracker() {
     return `${day}-${month}-${year}`;
   };
 
-  // Example usage
-  console.log(getFormattedDateTime());
-
   const logMeal = async () => {
     console.log(foodNutrients)
     // if(foodNutrients.length ==0){

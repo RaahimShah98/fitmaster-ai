@@ -81,8 +81,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const userSetDoc = doc(db, "user", user?.email); // Set email as document ID
 
         await setDoc(userSetDoc, {
-          fullName: user?.email.split("@")[0], email: user?.email, dob: "", weight: "", height: "",
-          weight_goal: "", Role: "user" ,status:"Active", TC:true , RegisterDate: new Date().toLocaleDateString()
+          fullName: user?.email.split("@")[0], email: user?.email, dob: "", weight: 0, height: 0,
+          weight_goal: "", Role: "user" ,status:"Active",subscription:"free" , TC:true , RegisterDate: new Date().toLocaleDateString() , lastUpdate : new Date().toLocaleDateString()
         });
         console.log("User added successfully!", user?.email);
       }

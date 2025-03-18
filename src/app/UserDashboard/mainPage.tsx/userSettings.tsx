@@ -1,29 +1,35 @@
 // pages/user-settings.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect} from 'react';
 import Head from 'next/head';
-import { useAuth } from '@/context/FirebaseContext';
 
+import { db } from '@/lib/firebase';
+import { getDoc, doc, setDoc ,collection } from 'firebase/firestore';
 
 interface UserSettingsProps {
-  email:string
+  email: string
 }
 
-
-
-const UserSettings: React.FC<UserSettingsProps> = ({email}) => {
+const UserSettings: React.FC<UserSettingsProps> = ({ email }) => {
   const [formData, setFormData] = useState({
-    fullName: 'John Doe',
-    weight: 75,
-    height: 180,
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
+    fullName: '',
+    weight: 0,
+    height: 0,
+    lastUpdate: new Date().toLocaleDateString(),
+    RegisterDate: "",
+    dob: "",
+    Role: "user",
+    status: "",
+    subscription: "",
+    weight_goal: "",
   });
 
   const [weightUnit, setWeightUnit] = useState('kg');
   const [heightUnit, setHeightUnit] = useState('cm');
+  const [newPassword , setNewPassowrd] = useState("")
+  const [confirmPassword , setConfirmPassowrd] = useState("")
   const [saved, setSaved] = useState(false);
 
+  // Handle Input change in form
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({
@@ -33,9 +39,79 @@ const UserSettings: React.FC<UserSettingsProps> = ({email}) => {
     setSaved(false);
   };
 
+  // Fetch user Details from Database
+  const getUserData = async () => {
+    const postRef = doc(db, "user", email)
+    const querySnapShot = await getDoc(postRef)
+
+    const userData = querySnapShot.data()
+    console.log("USER DATA : ", userData)
+    const form = {
+      fullName: userData?.fullName ?? "",
+      weight: userData?.weight ?? 0,
+      height: userData?.height ?? 0,
+      lastUpdate: new Date().toLocaleDateString(),
+      RegisterDate: userData?.RegisterDate,
+      dob: userData?.dob,
+      Role: "user",
+      status: userData?.status,
+      subscription: userData?.subscription,
+      weight_goal: userData?.weight_goal
+    }
+
+    setFormData(form)
+  }
+
+  useEffect(() => {
+    getUserData()
+  }, [])
+
+  //Update user Weight
+  const getFormattedDateTime = (): string => {
+    const now = new Date();
+
+    // Get day, month, and year
+    const day = String(now.getDate()).padStart(2, "0");
+    const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+    const year = now.getFullYear();
+
+    // Get total minutes passed since midnight
+    const totalMinutes = now.getHours() * 60 + now.getMinutes();
+
+    return `${day}-${month}-${year}`;
+  };
+
+  const updateUserWeight = async ()=>{
+    const postRef = doc(db , "user_weight_tracking" , email , "weights" ,getFormattedDateTime() );
+    await setDoc(postRef , { weight: Number(formData.weight) }, { merge: true }  )
+
+  }
+
+  //Update User Details
+  const updateUserDetails = async () => {
+    console.log("called")
+    const postRef = doc(db, "user", email)
+    const querySnapShot = await setDoc(postRef, formData)
+    updateUserWeight()
+    alert("UPDATED")
+    console.log(querySnapShot)
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Validation would go here
+    if (newPassword.length > 0) {
+      if (newPassword.length < 8) {
+        alert("Password length must be > 8")
+        return
+      }
+      if (confirmPassword != newPassword) {
+        alert("Password donot match")
+        return
+      }
+    }
+    updateUserDetails()
+
     console.log('Saving user settings:', formData);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
@@ -86,8 +162,8 @@ const UserSettings: React.FC<UserSettingsProps> = ({email}) => {
                 />
               </div>
 
-               {/* Email */}
-               <div className="mb-4">
+              {/* Email */}
+              <div className="mb-4">
                 <label htmlFor="fullName" className="block text-sm font-medium mb-1 text-gray-300">
                   Email
                 </label>
@@ -102,7 +178,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({email}) => {
               </div>
 
               {/* Weight with unit toggle */}
-              <div className= "flex flex-row justify-between items-center flex-wrap">
+              <div className="flex flex-row justify-between items-center flex-wrap">
                 <div className="mb-4 w-[46%]">
                   <label htmlFor="weight" className="block text-sm font-medium mb-1 text-gray-300">
                     Weight
@@ -160,21 +236,6 @@ const UserSettings: React.FC<UserSettingsProps> = ({email}) => {
               <div className="border-t border-gray-700 pt-6 mt-6">
                 <h2 className="text-xl mb-4 text-purple-400">Change Password</h2>
 
-                {/* Current Password */}
-                <div className="mb-4">
-                  <label htmlFor="currentPassword" className="block text-sm font-medium mb-1 text-gray-300">
-                    Current Password
-                  </label>
-                  <input
-                    type="password"
-                    id="currentPassword"
-                    name="currentPassword"
-                    value={formData.currentPassword}
-                    onChange={handleInputChange}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-
                 {/* New Password */}
                 <div className="mb-4">
                   <label htmlFor="newPassword" className="block text-sm font-medium mb-1 text-gray-300">
@@ -184,8 +245,8 @@ const UserSettings: React.FC<UserSettingsProps> = ({email}) => {
                     type="password"
                     id="newPassword"
                     name="newPassword"
-                    value={formData.newPassword}
-                    onChange={handleInputChange}
+                    value={newPassword}
+                    onChange={(e) =>setNewPassowrd(e.target.value)}
                     className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
@@ -199,8 +260,8 @@ const UserSettings: React.FC<UserSettingsProps> = ({email}) => {
                     type="password"
                     id="confirmPassword"
                     name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
+                    value={confirmPassword}
+                    onChange={(e) =>setConfirmPassowrd(e.target.value)}
                     className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
