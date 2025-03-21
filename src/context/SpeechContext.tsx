@@ -15,6 +15,8 @@ export const SpeechProvider = ({ children }: { children: React.ReactNode }) => {
   const [cooldown, setCooldown] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef<any | null>(null);
+  const lastSpokenMessageRef = useRef<string | null>(null);
+  const lastMessageTimeRef = useRef<number>(0);
 
   // Function to read a message aloud
   const readMessageAloud = useCallback((message: string) => {
@@ -39,18 +41,31 @@ export const SpeechProvider = ({ children }: { children: React.ReactNode }) => {
   // Filter and announce messages only when not recently spoken
   const announceMessage = useCallback(
     (newMessage: string) => {
-      if (!cooldown && newMessage !== lastSpokenMessage) {
-        setIsSpeaking(true);
-        readMessageAloud(newMessage);
-        setCooldown(true);
+      const currentTime = Date.now();
 
-        // Set a timeout to reset the cooldown
-        setTimeout(() => {
-          setCooldown(false);
-        }, 5000); // 5-second cooldown
+      // If message is the same and less than 10s passed, do nothing
+      if (
+        cooldown ||
+        (newMessage === lastSpokenMessageRef.current &&
+          currentTime - lastMessageTimeRef.current < 10000)
+      ) {
+        return;
       }
+
+      // Set cooldown *before* speaking to avoid race conditions
+      setCooldown(true);
+      lastMessageTimeRef.current = currentTime;
+      lastSpokenMessageRef.current = newMessage;
+
+      setIsSpeaking(true);
+      readMessageAloud(newMessage);
+
+      // Reset cooldown after 5s
+      setTimeout(() => {
+        setCooldown(false);
+      }, 5000);
     },
-    [cooldown, lastSpokenMessage, readMessageAloud]
+    [cooldown, readMessageAloud] // ✅ Removed lastSpokenMessage from dependencies
   );
 
   const startVoiceRecognition = useCallback(

@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useState } from "react";
 import Webcam from "react-webcam";
 import * as mediaPose from "@mediapipe/pose";
 import * as camUtils from "@mediapipe/camera_utils";
-import { Play, Pause, ArrowRightLeft } from "lucide-react";
+import { Play, Pause, ArrowRightLeft, Dumbbell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import useWebSocket from "react-use-websocket";
@@ -14,6 +14,8 @@ import PredAnalyzer from "@/lib/predAnalyzer";
 const messagesMap = {
   landmarks_not_visible:
     "Please make sure your full body is visible in the camera",
+  side_view_required:
+    "Make sure to face sideways! Side view helps track your form more accurately.",
 } as Record<string, string>;
 
 function getLatestRepCounts(data: Record<string, any>[]) {
@@ -41,6 +43,19 @@ type WorkoutState = {
   elapsedTime: number;
 };
 
+type ExerciseState = {
+  state_seq: any[]; // Assuming it can hold any type of data, or use a more specific type if known
+  DISPLAY_TEXT: boolean[];
+  COUNT_FRAMES: number[];
+  INCORRECT_POSTURE: boolean;
+  prev_state: string | null;
+  curr_state: string | null;
+  REP_COUNT: number;
+  IMPROPER_REP_COUNT: number;
+  state_seq_2: any[]; // Same as state_seq, refine if possible
+  exercise: string;
+};
+
 const exerciseToMuscleMap = {
   "bicep-curl": ["Biceps"],
   squat: ["Quadriceps", "Glutes", "Hamstrings", "Core"],
@@ -53,7 +68,7 @@ const LiveStream = () => {
   const cameraRef = useRef<any>(null);
   const [prediction, setPrediction] = useState("");
   const [resultImage, setResultImage] = useState("");
-  const [currentState, setCurrentState] = useState({});
+  const [currentState, setCurrentState] = useState<ExerciseState | null>(null);
   const [allStates, setAllStates] = useState([]);
   const [promptUser, setPromptUser] = useState(true);
   const [predictionConfirmed, setPredictionConfirmed] = useState(false);
@@ -93,7 +108,7 @@ const LiveStream = () => {
     };
     message: string;
     image: string;
-    state: Record<string, any>;
+    state: ExerciseState;
   }>(
     "ws://localhost:8000/ws", // FastAPI WebSocket endpoint
     {
@@ -345,28 +360,34 @@ const LiveStream = () => {
         {/* Total Reps Card */}
         <div className="bg-[#1E1E3F] rounded-2xl shadow-lg p-4 flex items-center">
           <div className="bg-indigo-900/50 p-3 rounded-lg mr-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-indigo-400"
-            >
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
+            <Dumbbell />
           </div>
-          <div>
-            <h3 className="text-gray-400 text-sm">Total Reps</h3>
-            <p className="text-2xl font-bold">
-              {workoutState.completedReps}/{workoutState.totalReps}
+          <div className="flex justify-between items-center gap-8">
+            <div className="text-center">
+              <h3 className="text-gray-400 text-sm">Correct Reps</h3>
+              <p className="text-green-500 text-xl font-bold">
+                {currentState?.REP_COUNT || 0}
+              </p>
+            </div>
+
+            <div className="text-center">
+              <h3 className="text-gray-400 text-sm">Incorrect Reps</h3>
+              <p className="text-red-500 text-xl font-bold">
+                {currentState?.IMPROPER_REP_COUNT || 0}
+              </p>
+            </div>
+          </div>
+          {/* <div>
+            <h3 className="text-gray-400 text-sm mt-2">Correct Reps</h3>
+            <p className="text-green-500 text-xl font-bold">
+              {currentState?.REP_COUNT || 0}
             </p>
-          </div>
+
+            <h3 className="text-gray-400 text-sm mt-2">Incorrect Reps</h3>
+            <p className="text-red-500 text-xl font-bold">
+              {currentState?.IMPROPER_REP_COUNT || 0}
+            </p>
+          </div> */}
         </div>
 
         {/* Current Exercise Card */}
