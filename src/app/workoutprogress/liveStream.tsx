@@ -487,7 +487,7 @@ const LiveStream = () => {
                       htmlFor="manualExercise"
                       className="block mb-2 font-semibold"
                     >
-                      Select Exercise
+                      Select Exercise Manually
                     </label>
                     <select
                       id="manualExercise"
@@ -556,7 +556,7 @@ const LiveStream = () => {
                 screenshotFormat="image/jpeg"
                 className="w-full rounded"
               />
-              {lastJsonMessage?.image && (
+              {lastJsonMessage?.image && predictionConfirmed && (
                 <img
                   src={"data:image/jpeg;base64," + lastJsonMessage?.image}
                   alt="Processed Image"
