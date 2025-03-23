@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import useWebSocket from "react-use-websocket";
 import { useSpeech } from "@/context/SpeechContext";
 import PredAnalyzer from "@/lib/predAnalyzer";
+import BumpNumber from "@/components/BumpNumber";
 
 const messagesMap = {
   landmarks_not_visible:
@@ -76,9 +77,12 @@ const LiveStream = () => {
   const [status, setStatus] = useState("Connecting...");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const { announceMessage, startVoiceRecognition } = useSpeech();
+  const [showManualSelect, setShowManualSelect] = useState(false);
+
   const [poseResults, setPoseResults] = useState<any>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isPoseReady, setIsPoseReady] = useState(false);
+  const [message, setMessage] = useState("");
   const [workoutState, setWorkoutState] = useState<WorkoutState>({
     exerciseName: "Bicep Curls",
     totalSets: 5,
@@ -187,6 +191,9 @@ const LiveStream = () => {
     }
 
     if (lastJsonMessage.message) {
+      setMessage(
+        messagesMap[lastJsonMessage.message] || lastJsonMessage.message
+      );
       announceMessage(
         messagesMap[lastJsonMessage.message] || lastJsonMessage.message
       );
@@ -328,6 +335,11 @@ const LiveStream = () => {
   };
   return (
     <>
+      {message && (
+        <div className="mb-4 rounded-xl bg-yellow-500/20 text-yellow-300 px-4 py-2 text-center font-semibold shadow">
+          {message}
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {/* Total Sets Card */}
         <div className="bg-[#1E1E3F] rounded-2xl shadow-lg p-4 flex items-center">
@@ -365,16 +377,28 @@ const LiveStream = () => {
           <div className="flex justify-between items-center gap-8">
             <div className="text-center">
               <h3 className="text-gray-400 text-sm">Correct Reps</h3>
-              <p className="text-green-500 text-xl font-bold">
+              <BumpNumber
+                value={currentState?.REP_COUNT || 0}
+                color="text-green-500"
+                isSuccess
+                soundEffectUrl="/sound-effects/correct.mp3"
+              />
+
+              {/* <p className="text-green-500 text-xl font-bold">
                 {currentState?.REP_COUNT || 0}
-              </p>
+              </p> */}
             </div>
 
             <div className="text-center">
               <h3 className="text-gray-400 text-sm">Incorrect Reps</h3>
-              <p className="text-red-500 text-xl font-bold">
+              <BumpNumber
+                value={currentState?.IMPROPER_REP_COUNT || 0}
+                color="text-red-500"
+                soundEffectUrl="/sound-effects/wrong.mp3"
+              />
+              {/* <p className="text-red-500 text-xl font-bold">
                 {currentState?.IMPROPER_REP_COUNT || 0}
-              </p>
+              </p> */}
             </div>
           </div>
           {/* <div>
@@ -433,7 +457,63 @@ const LiveStream = () => {
               </div>
             </div>
           )}
+
           {showConfirmation && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="w-[400px] rounded-lg bg-white p-6 text-black shadow-lg">
+                <h2 className="text-lg font-bold mb-2">Confirm Exercise</h2>
+                <p className="mb-4">
+                  Are you performing <strong>{prediction}</strong>?
+                </p>
+
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={() => handleConfirm(prediction)}
+                    className="rounded bg-blue-500 px-4 py-2 text-white"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setShowManualSelect(true)}
+                    className="rounded bg-red-500 px-4 py-2 text-white"
+                  >
+                    No
+                  </button>
+                </div>
+
+                {showManualSelect && (
+                  <div className="mt-6">
+                    <label
+                      htmlFor="manualExercise"
+                      className="block mb-2 font-semibold"
+                    >
+                      Select Exercise
+                    </label>
+                    <select
+                      id="manualExercise"
+                      className="w-full rounded border border-gray-300 p-2"
+                      onChange={(e) => {
+                        setPrediction(e.target.value);
+                        handleConfirm(e.target.value);
+                      }}
+                      defaultValue=""
+                    >
+                      <option value="" disabled>
+                        -- Choose Exercise --
+                      </option>
+                      {Object.keys(exerciseToMuscleMap).map((ex) => (
+                        <option key={ex} value={ex}>
+                          {ex}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* {showConfirmation && (
             <div className="fixed inset-0 z-50 flex  items-center justify-center bg-black bg-opacity-50">
               <div className="w-[400px] rounded-lg bg-white p-6 text-black shadow-lg">
                 <h2 className="text-lg font-bold">Confirm Exercise</h2>
@@ -454,7 +534,7 @@ const LiveStream = () => {
                 </button>
               </div>
             </div>
-          )}
+          )} */}
           <div>
             <div
               className="flex justify-between"

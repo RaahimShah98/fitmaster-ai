@@ -12,7 +12,6 @@ const SpeechRecognition =
 
 export const SpeechProvider = ({ children }: { children: React.ReactNode }) => {
   const [lastSpokenMessage, setLastSpokenMessage] = useState("");
-  const [cooldown, setCooldown] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef<any | null>(null);
   const lastSpokenMessageRef = useRef<string | null>(null);
@@ -30,7 +29,8 @@ export const SpeechProvider = ({ children }: { children: React.ReactNode }) => {
     speech.volume = 1;
 
     speech.onend = () => {
-      setCooldown(false); // Reset cooldown after speaking
+      cooldownRef.current = false;
+      // Reset cooldown after speaking
       setIsSpeaking(false);
     };
 
@@ -39,33 +39,35 @@ export const SpeechProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   // Filter and announce messages only when not recently spoken
+  const cooldownRef = useRef<boolean>(false);
+
   const announceMessage = useCallback(
     (newMessage: string) => {
       const currentTime = Date.now();
 
-      // If message is the same and less than 10s passed, do nothing
+      // If message is the same and less than 10s passed, skip
       if (
-        cooldown ||
+        cooldownRef.current ||
         (newMessage === lastSpokenMessageRef.current &&
           currentTime - lastMessageTimeRef.current < 10000)
       ) {
         return;
       }
 
-      // Set cooldown *before* speaking to avoid race conditions
-      setCooldown(true);
+      // Update cooldown immediately
+      cooldownRef.current = true;
       lastMessageTimeRef.current = currentTime;
       lastSpokenMessageRef.current = newMessage;
 
       setIsSpeaking(true);
       readMessageAloud(newMessage);
 
-      // Reset cooldown after 5s
+      // Reset cooldown after 5 seconds
       setTimeout(() => {
-        setCooldown(false);
+        cooldownRef.current = false;
       }, 5000);
     },
-    [cooldown, readMessageAloud] // ✅ Removed lastSpokenMessage from dependencies
+    [readMessageAloud]
   );
 
   const startVoiceRecognition = useCallback(
