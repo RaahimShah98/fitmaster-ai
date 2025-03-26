@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log("User added successfully!", user?.email);
       }
       else{
-        console.log("USER ALREADY EXISTS IN DB: " , user?.email)
+        // console.log("USER ALREADY EXISTS IN DB: " , user?.email)
       }
     } catch (error) {
       console.log(error);

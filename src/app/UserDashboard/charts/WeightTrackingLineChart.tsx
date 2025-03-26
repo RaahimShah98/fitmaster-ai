@@ -2,11 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { db } from '@/lib/firebase';
-<<<<<<< HEAD
 import { collection , onSnapshot } from 'firebase/firestore';
-=======
-import { getDocs, collection, onSnapshot } from 'firebase/firestore';
->>>>>>> main
 
 interface weightTrackingProps {
   email: string;
@@ -16,11 +12,7 @@ interface weightTrackingProps {
 const WeightTracker: React.FC<weightTrackingProps> = ({ email }) => {
   const [data, setWeightData] = useState<object[]>([])
 
-<<<<<<< HEAD
   const getUserWeight = (email:string) => {
-=======
-  const getUserWeight = async () => {
->>>>>>> main
     if(!email) return;
     
     try {
@@ -91,7 +83,7 @@ const WeightTracker: React.FC<weightTrackingProps> = ({ email }) => {
   };
 
   return (
-    <Card className="min-w-full max-w-2xl h-full bg-black/20 text-white border-none shadow-none">
+    <Card className="min-w-full max-w-2xl h-full bg-transparent text-white border-none shadow-none">
       <CardHeader>
         <CardTitle>Weight Tracking</CardTitle>
       </CardHeader>

@@ -4,7 +4,7 @@ import WeightTracker from '../charts/WeightTrackingLineChart';
 
 // firestore
 import { db } from '../../../lib/firebase';
-import { doc, getDoc, getDocs, collection } from "firebase/firestore";
+import { getDocs, collection} from "firebase/firestore";
 
 import {
     Chart as ChartJS,
@@ -16,6 +16,8 @@ import {
     Tooltip,
     Legend
 } from 'chart.js';
+
+import AddWeight from '../charts/addWeight';
 
 import { Pie, Bar, Doughnut } from 'react-chartjs-2';
 interface UserAnalyticsProps {
@@ -38,6 +40,12 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
     const [date, setDate] = useState<string>("")
     // const [caloriesBurned, setCaloriesBurned] = useState<number>(0);
     const [caloriesConsumed, setCaloriesConsumed] = useState<number>(0);
+    const [addWeight, setAddWeight] = useState<boolean>(false)
+
+    //workout data
+    const [workoutData, setWorkoutData] = useState<any[]>([]);
+    const [workoutNames , setWorkoutName]= useState<any[]>([]);
+    const [workoutNumber , setWorkoutNumber]= useState<any[]>([]);
 
     console.log("USER: ", email)
     // Fetch user Meal for today
@@ -56,13 +64,14 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
     };
 
     const fetch_user_calories = async () => {
+        if (!email) return;
         try {
             const postsRef = collection(db, "food_logs", email, getFormattedDateTime());
-            console.log(postsRef)
+            // console.log(postsRef)
             const querySnapshot = await getDocs(postsRef);
 
             const totalCalories = querySnapshot.docs.reduce((sum, doc) => { return doc.data().content.calories + sum }, 0);
-            console.log("CALORIES: ", totalCalories)
+            // console.log("CALORIES: ", totalCalories)
             setCaloriesConsumed(totalCalories);
 
             const documents = querySnapshot.docs.map(doc => ({
@@ -70,31 +79,55 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
                 ...doc.data()
             }));
 
-            console.log("Fetched Documents:", documents);
+            // console.log("Fetched Documents:", documents);
         } catch (e) {
+
             return
         }
     }
 
-    fetch_user_calories()
+    //GET USER WORKOUT DATA
+    const getWorkoutData = async () => {
+        if (!email) return;
+        console.log("EAMIL: ", email)
+        try {
+            // const userRef = collection(db, "user_exercise_data", email, date);
+            const userRef = collection(db, "user_exercise_data", email, "25-03-2025");
+            // console.log("REF:" , userRef)
+            const userSnap = await getDocs(userRef);
 
-    const getWorkoutData = async (email: string) => {
-        try{
-        const userRef = doc(db, "user_exercise_data", email);
-        // console.log("REF:" , userRef)
-        const userSnap = await getDoc(userRef);
+            // console.log("SNAP: ", userSnap.docs)
+            const workouts = userSnap.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data()
+            }))
 
-        if (!userSnap.exists()) {
-            console.log("No such document!");
-        } else {
-            // console.log("Document data:", userSnap.data());
-            console.log("HELLO")
-            return userSnap.data();
+            setWorkoutData(workouts)
+            console.log(workouts)
+
+
+
+        } catch (e) {
+            console.log("FAILED TO FETCH", e.message)
+            return
         }
-    }catch(e){
-        return
     }
+
+
+    // Set Excercise Sets Distribution Data
+    const setDistributionData = () => {
+        const exerciseCount = workoutData.reduce((acc, item) => {
+            const name = item.content.name;
+            acc[name] = (acc[name] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+        
+        setWorkoutName(Object.keys(exerciseCount)); 
+        setWorkoutNumber(Object.values(exerciseCount));
+        console.log(exerciseCount);
+
     }
+
 
     useEffect(() => {
         console.log("EMAIL NISIDE: ", email);
@@ -102,22 +135,33 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
     }, []);
 
     useEffect(() => {
+        if (!email) return; // Prevent running if email is not available
+        console.log("EMAIL INSIDE EFFECT:", email);
+        fetch_user_calories();
+        getWorkoutData();
+    }, [date, email])
 
-        fetch_user_calories()
-    }, [date])
+    useEffect(() => {
+        console.log("DATA: ", workoutData)
+        setDistributionData();
+    }, [workoutData])
+
+    useEffect(()=>{
+
+    },[workoutNames,workoutNumber])
 
     // RUN AFTER EMAIL IS SET
-    useEffect(() => {
-        console.log("EMAIL: ", email);
+    // useEffect(() => {
+    //     console.log("EMAIL: ", email);
 
-        const fetchData = async () => {
-            const docData = await getWorkoutData(email); // Wait for the data
-            console.log("Fetched Data:", docData);
-            setData(docData);
-        };
+    //     const fetchData = async () => {
+    //         const docData = await getWorkoutData(email); // Wait for the data
+    //         // console.log("Fetched Data:", docData);
+    //         setData(docData);
+    //     };
 
-        fetchData();
-    }, [email]);
+    //     fetchData();
+    // }, [email]);
 
     useEffect(() => {
         // console.log("DATA UPDATED:", data);
@@ -125,13 +169,26 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
         console.log(data?.Date?.excercise.excercise_name, data?.Date?.excercise.exercise_sets)
     }, [data]);
 
+    useEffect(() => {
+        if (addWeight) {
+            document.body.classList.add("overflow-hidden");
+        } else {
+            document.body.classList.remove("overflow-hidden");
+        }
+
+        // Cleanup on unmount
+        return () => {
+            document.body.classList.remove("overflow-hidden");
+        };
+    }, [addWeight]);
+
     // Sample data for exercises sets
     const pieChartData = {
         // labels: ['Push-ups', 'Squats', 'Pull-ups', 'Lunges', 'Planks'],
-        labels: data?.Date?.excercise.excercise_name,
+        labels: workoutNames,
         datasets: [{
             // data: [30, 25, 15, 20, 10],
-            data: data?.Date?.excercise.exercise_sets,
+            data: workoutNumber,
             backgroundColor: [
                 'rgba(255, 99, 132, 0.8)',
                 'rgba(54, 162, 235, 0.8)',
@@ -241,7 +298,9 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
     };
 
     return (
-        <div className="flex min-w-screen min-h-screen pb-10 bg-gray-900 text-white">
+        <div className="flex min-w-screen min-h-screen pb-10 bg-gray-900 text-white ">
+            {addWeight && <AddWeight email={email} close={setAddWeight} />}
+
             <div className="min-w-screen max-w-6xl mx-auto space-y-8 w-[100%]">
                 <h1 className="text-3xl font-bold  mb-8">Exercise Progress Dashboard</h1>
 
@@ -261,13 +320,14 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
 
                         {/* Weight Tracker */}
 
-                        <div className="bg-black/50 p-6 rounded-lg shadow-md w-full md:w-[100%] mb-[20px]">
+                        <div className="bg-black/50 p-6 rounded-lg shadow-md w-full md:w-[100%] mb-[20px] overflow-hidden">
+                            <button onClick={() => setAddWeight(true)} className="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition mb-2">Add Weight</button>
                             <WeightTracker email={email} />
                         </div>
                     </div>
 
                     {/* Lower Chart */}
-                    <div className="min-w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="min-w-full grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Bar Chart */}
                         <div className="w-full bg-black/50 p-6 rounded-lg shadow-md">
                             <h2 className="text-xl font-semibold mb-4">Weekly Exercise Activity</h2>
@@ -277,12 +337,12 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
                         </div>
 
                         {/* Pie Chart */}
-                        {/* <div className="w-full bg-black/50 p-6 rounded-lg shadow-md ">
-                            <h2 className="text-xl font-semibold mb-4">Exercise Sets Distribution</h2>
+                        <div className="w-full bg-black/50 p-6 rounded-lg shadow-md ">
+                            <h2 className="text-xl font-semibold mb-4">Daily Exercise Sets Distribution</h2>
                             <div className="h-64">
                                 <Pie data={pieChartData} options={chartOptions} />
                             </div>
-                        </div> */}
+                        </div>
 
 
 
