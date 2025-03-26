@@ -153,6 +153,7 @@ export default function FoodTracker() {
     //   alert("No foods detected")
     //   return;
     // }
+
     try {
       // Reference the subcollection (users/{userId}/posts)
       const postsRef = collection(db, "food_logs", email, getFormattedDateTime());
