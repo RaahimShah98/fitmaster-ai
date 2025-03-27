@@ -21,6 +21,12 @@ const PersonalizedWorkoutPlan: React.FC<personalizedWorkoutProps> = ({ email }) 
         setWorkoutPlan(data["data_base_name"]);
     }
 
+    const [openDay, setOpenDay] = useState<string | null>(null);
+
+    const toggleDay = (day: string) => {
+        setOpenDay(openDay === day ? null : day);
+    };
+
     useEffect(() => {
         getWorkoutPlan()
     }, [])
@@ -44,13 +50,16 @@ const PersonalizedWorkoutPlan: React.FC<personalizedWorkoutProps> = ({ email }) 
                 </h1>
 
                 <div className="bg-gray-800 rounded-lg shadow-xl overflow-hidden">
-                    <div className="grid grid-cols-1 gap-4 sm:gap-0 sm:divide-y divide-gray-700">
-                        {Object.entries(groupedWorkouts).map(([day, exercises]) => (
-                            <div key={day} className="p-0">
-                                <div className="bg-indigo-800 px-6 py-3">
-                                    <h2 className="text-xl font-semibold">{day}</h2>
-                                </div>
-
+                    {Object.entries(groupedWorkouts).map(([day, exercises]) => (
+                        <div key={day} className="border-b border-gray-700">
+                            <button
+                                className="w-full text-left px-6 py-3 bg-indigo-800 text-xl font-semibold flex justify-between items-center"
+                                onClick={() => toggleDay(day)}
+                            >
+                                {day}
+                                <span>{openDay === day ? "▲" : "▼"}</span>
+                            </button>
+                            {openDay === day && (
                                 <div className="px-4 py-2">
                                     {exercises.length === 1 && exercises[0].exercise === "Rest Day" ? (
                                         <div className="p-4 text-center text-gray-300 italic">Rest and Recovery</div>
@@ -75,9 +84,9 @@ const PersonalizedWorkoutPlan: React.FC<personalizedWorkoutProps> = ({ email }) 
                                         </table>
                                     )}
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            )}
+                        </div>
+                    ))}
                 </div>
 
                 <div className="mt-8 text-center text-sm text-gray-400">
