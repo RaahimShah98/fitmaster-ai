@@ -1,364 +1,404 @@
-
-import React, { useEffect, useState } from 'react';
-import WeightTracker from '../charts/WeightTrackingLineChart';
+import React, { useEffect, useState } from "react";
+import WeightTracker from "../charts/WeightTrackingLineChart";
 
 // firestore
-import { db } from '../../../lib/firebase';
-import { getDocs, collection} from "firebase/firestore";
+import { db } from "../../../lib/firebase";
+import { getDocs, collection } from "firebase/firestore";
 
 import {
-    Chart as ChartJS,
-    ArcElement,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend
-} from 'chart.js';
+  Chart as ChartJS,
+  ArcElement,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
 
-import AddWeight from '../charts/addWeight';
+import AddWeight from "../charts/addWeight";
 
-import { Pie, Bar, Doughnut } from 'react-chartjs-2';
+import { Pie, Bar, Doughnut } from "react-chartjs-2";
 interface UserAnalyticsProps {
-    email: string;
+  email: string;
 }
 // Register ChartJS components
 ChartJS.register(
-    ArcElement,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend
+  ArcElement,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
 );
 
 const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
+  const [data, setData] = useState<object | null>(null);
+  const [date, setDate] = useState<string>("");
+  // const [caloriesBurned, setCaloriesBurned] = useState<number>(0);
+  const [caloriesConsumed, setCaloriesConsumed] = useState<number>(0);
+  const [addWeight, setAddWeight] = useState<boolean>(false);
 
-    const [data, setData] = useState<object | null>(null);
-    const [date, setDate] = useState<string>("")
-    // const [caloriesBurned, setCaloriesBurned] = useState<number>(0);
-    const [caloriesConsumed, setCaloriesConsumed] = useState<number>(0);
-    const [addWeight, setAddWeight] = useState<boolean>(false)
+  //workout data
+  const [workoutData, setWorkoutData] = useState<any[]>([]);
+  const [workoutNames, setWorkoutName] = useState<any[]>([]);
+  const [workoutNumber, setWorkoutNumber] = useState<any[]>([]);
 
-    //workout data
-    const [workoutData, setWorkoutData] = useState<any[]>([]);
-    const [workoutNames , setWorkoutName]= useState<any[]>([]);
-    const [workoutNumber , setWorkoutNumber]= useState<any[]>([]);
+  console.log("USER: ", email);
+  // Fetch user Meal for today
+  const getFormattedDateTime = (): string => {
+    const now = new Date();
 
-    console.log("USER: ", email)
-    // Fetch user Meal for today
-    const getFormattedDateTime = (): string => {
-        const now = new Date();
+    // Get day, month, and year
+    const day = String(now.getDate()).padStart(2, "0");
+    const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+    const year = now.getFullYear();
 
-        // Get day, month, and year
-        const day = String(now.getDate()).padStart(2, "0");
-        const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-based
-        const year = now.getFullYear();
+    // Get total minutes passed since midnight
+    const totalMinutes = now.getHours() * 60 + now.getMinutes();
 
-        // Get total minutes passed since midnight
-        const totalMinutes = now.getHours() * 60 + now.getMinutes();
+    return `${day}-${month}-${year}`;
+  };
 
-        return `${day}-${month}-${year}`;
-    };
+  const fetch_user_calories = async () => {
+    if (!email) return;
+    try {
+      const postsRef = collection(
+        db,
+        "food_logs",
+        email,
+        getFormattedDateTime()
+      );
+      // console.log(postsRef)
+      const querySnapshot = await getDocs(postsRef);
 
-    const fetch_user_calories = async () => {
-        if (!email) return;
-        try {
-            const postsRef = collection(db, "food_logs", email, getFormattedDateTime());
-            // console.log(postsRef)
-            const querySnapshot = await getDocs(postsRef);
+      const totalCalories = querySnapshot.docs.reduce((sum, doc) => {
+        return doc.data().content.calories + sum;
+      }, 0);
+      // console.log("CALORIES: ", totalCalories)
+      setCaloriesConsumed(totalCalories);
 
-            const totalCalories = querySnapshot.docs.reduce((sum, doc) => { return doc.data().content.calories + sum }, 0);
-            // console.log("CALORIES: ", totalCalories)
-            setCaloriesConsumed(totalCalories);
+      const documents = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-            const documents = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
-            // console.log("Fetched Documents:", documents);
-        } catch (e) {
-
-            return
-        }
+      // console.log("Fetched Documents:", documents);
+    } catch (e) {
+      return;
     }
+  };
 
-    //GET USER WORKOUT DATA
-    const getWorkoutData = async () => {
-        if (!email) return;
-        console.log("EAMIL: ", email)
-        try {
-            // const userRef = collection(db, "user_exercise_data", email, date);
-            const userRef = collection(db, "user_exercise_data", email, "25-03-2025");
-            // console.log("REF:" , userRef)
-            const userSnap = await getDocs(userRef);
+  //GET USER WORKOUT DATA
+  const getWorkoutData = async () => {
+    if (!email) return;
+    console.log("EAMIL: ", email);
+    try {
+      // const userRef = collection(db, "user_exercise_data", email, date);
+      const userRef = collection(db, "user_exercise_data", email, "25-03-2025");
+      // console.log("REF:" , userRef)
+      const userSnap = await getDocs(userRef);
 
-            // console.log("SNAP: ", userSnap.docs)
-            const workouts = userSnap.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data()
-            }))
+      // console.log("SNAP: ", userSnap.docs)
+      const workouts = userSnap.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-            setWorkoutData(workouts)
-            console.log(workouts)
-
-
-
-        } catch (e) {
-            console.log("FAILED TO FETCH", e.message)
-            return
-        }
+      setWorkoutData(workouts);
+      console.log(workouts);
+    } catch (e) {
+      console.log("FAILED TO FETCH", e.message);
+      return;
     }
+  };
 
+  // Set Excercise Sets Distribution Data
+  const setDistributionData = () => {
+    const exerciseCount = workoutData.reduce((acc, item) => {
+      const name = item.content.name;
+      acc[name] = (acc[name] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-    // Set Excercise Sets Distribution Data
-    const setDistributionData = () => {
-        const exerciseCount = workoutData.reduce((acc, item) => {
-            const name = item.content.name;
-            acc[name] = (acc[name] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-        
-        setWorkoutName(Object.keys(exerciseCount)); 
-        setWorkoutNumber(Object.values(exerciseCount));
-        console.log(exerciseCount);
+    setWorkoutName(Object.keys(exerciseCount));
+    setWorkoutNumber(Object.values(exerciseCount));
+    console.log(exerciseCount);
+  };
 
-    }
+  useEffect(() => {
+    console.log("EMAIL NISIDE: ", email);
+    setDate(getFormattedDateTime());
+  }, []);
 
+  useEffect(() => {
+    if (!email) return; // Prevent running if email is not available
+    console.log("EMAIL INSIDE EFFECT:", email);
+    fetch_user_calories();
+    getWorkoutData();
+  }, [date, email]);
 
-    useEffect(() => {
-        console.log("EMAIL NISIDE: ", email);
-        setDate(getFormattedDateTime())
-    }, []);
+  useEffect(() => {
+    console.log("DATA: ", workoutData);
+    setDistributionData();
+  }, [workoutData]);
 
-    useEffect(() => {
-        if (!email) return; // Prevent running if email is not available
-        console.log("EMAIL INSIDE EFFECT:", email);
-        fetch_user_calories();
-        getWorkoutData();
-    }, [date, email])
+  useEffect(() => {}, [workoutNames, workoutNumber]);
 
-    useEffect(() => {
-        console.log("DATA: ", workoutData)
-        setDistributionData();
-    }, [workoutData])
+  // RUN AFTER EMAIL IS SET
+  // useEffect(() => {
+  //     console.log("EMAIL: ", email);
 
-    useEffect(()=>{
+  //     const fetchData = async () => {
+  //         const docData = await getWorkoutData(email); // Wait for the data
+  //         // console.log("Fetched Data:", docData);
+  //         setData(docData);
+  //     };
 
-    },[workoutNames,workoutNumber])
+  //     fetchData();
+  // }, [email]);
 
-    // RUN AFTER EMAIL IS SET
-    // useEffect(() => {
-    //     console.log("EMAIL: ", email);
+  useEffect(() => {
+    // console.log("DATA UPDATED:", data);
 
-    //     const fetchData = async () => {
-    //         const docData = await getWorkoutData(email); // Wait for the data
-    //         // console.log("Fetched Data:", docData);
-    //         setData(docData);
-    //     };
-
-    //     fetchData();
-    // }, [email]);
-
-    useEffect(() => {
-        // console.log("DATA UPDATED:", data);
-
-        console.log(data?.Date?.excercise.excercise_name, data?.Date?.excercise.exercise_sets)
-    }, [data]);
-
-    useEffect(() => {
-        if (addWeight) {
-            document.body.classList.add("overflow-hidden");
-        } else {
-            document.body.classList.remove("overflow-hidden");
-        }
-
-        // Cleanup on unmount
-        return () => {
-            document.body.classList.remove("overflow-hidden");
-        };
-    }, [addWeight]);
-
-    // Sample data for exercises sets
-    const pieChartData = {
-        // labels: ['Push-ups', 'Squats', 'Pull-ups', 'Lunges', 'Planks'],
-        labels: workoutNames,
-        datasets: [{
-            // data: [30, 25, 15, 20, 10],
-            data: workoutNumber,
-            backgroundColor: [
-                'rgba(255, 99, 132, 0.8)',
-                'rgba(54, 162, 235, 0.8)',
-                'rgba(255, 206, 86, 0.8)',
-                'rgba(75, 192, 192, 0.8)',
-                'rgba(153, 102, 255, 0.8)',
-            ],
-            borderColor: [
-                'rgba(255, 99, 132, 1)',
-                'rgba(54, 162, 235, 1)',
-                'rgba(255, 206, 86, 1)',
-                'rgba(75, 192, 192, 1)',
-                'rgba(153, 102, 255, 1)',
-            ],
-            borderWidth: 1,
-        }],
-    };
-
-    // Calorie data
-    const totalCalories = 5050; // Set the total calorie limit
-    const exceededCalories = Math.max(0, caloriesConsumed - totalCalories);
-    const normalCalories = Math.min(caloriesConsumed, totalCalories);
-    const remainingCalories = Math.max(0, totalCalories - caloriesConsumed);
-
-    const donutChartDataCalories = {
-        labels: caloriesConsumed > totalCalories ? ['Within Limit', 'Exceeded Calories', 'Remaining Calories'] : ['Within Limit', 'Remaining Calories'],
-        datasets: [{
-            data: caloriesConsumed > totalCalories
-                ? [normalCalories, exceededCalories, remainingCalories]
-                : [caloriesConsumed, remainingCalories],
-            backgroundColor: caloriesConsumed > totalCalories
-                ? ['rgba(35, 143, 102, 0.8)', 'rgb(251, 0, 54 ,0.8)', 'rgba(85, 85, 85, 0.8)']
-                : ['rgba(35, 143, 102, 0.8)', 'rgb(85, 85, 85, 0.8)'],
-            borderColor: caloriesConsumed > totalCalories ? ['rgba(35, 143, 102, 0.8)', 'rgb(251, 0, 54 ,0.8)', 'rgba(42, 42, 42, 0.8)'] :
-                ['rgba(54, 162, 235, 0.8)', 'rgb(129, 125, 125 , 0.8)',],
-            borderWidth: 2,
-        }],
-    };
-
-
-    // Sample data for weekly progress
-    const barChartData = {
-        labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-        datasets: [{
-            label: 'Number of Exercises',
-            data: [4, 5, 3, 6, 4, 2, 3],
-            backgroundColor: 'rgba(54, 162, 235, 0.8)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1,
-        }],
-    };
-
-    // Sample data for exercise accuracy
-    const donutChartData = {
-        labels: ['Correct Form', 'Incorrect Form'],
-        datasets: [{
-            data: [75, 25],
-            backgroundColor: [
-                'rgba(75, 192, 192, 0.8)',
-                'rgba(255, 99, 132, 0.8)',
-            ],
-            borderColor: [
-                'rgba(75, 192, 192, 1)',
-                'rgba(255, 99, 132, 1)',
-            ],
-            borderWidth: 1,
-        }],
-    };
-
-    const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'bottom' as const,
-            },
-        },
-    };
-
-    const donutOptions = {
-        ...chartOptions,
-        cutout: '60%',
-        plugins: {
-            ...chartOptions.plugins,
-            tooltip: {
-                callbacks: {
-                    label: function (context: any) {
-                        const label = context.label || '';
-                        const value = context.raw || 0;
-                        return `${label}: ${value} kcal`;
-                    }
-                }
-            }
-        }
-    };
-
-    const barChartOptions = {
-        ...chartOptions,
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 2,
-                },
-            },
-        },
-    };
-
-    return (
-        <div className="flex min-w-screen min-h-screen pb-10 bg-gray-900 text-white ">
-            {addWeight && <AddWeight email={email} close={setAddWeight} />}
-
-            <div className="min-w-screen max-w-6xl mx-auto space-y-8 w-[100%]">
-                <h1 className="text-3xl font-bold  mb-8">Exercise Progress Dashboard</h1>
-
-                <div className="flex flex-col flex-wrap ">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Daily Calorie Tracking */}
-                        <div className="bg-black/50 p-6 rounded-lg shadow-md w-full md:w-[100%] mb-[20px]">
-                            <h2 className="text-xl font-semibold mb-4">Daily Calorie Tracking</h2>
-                            <div className="h-64 relative flex items-center justify-center">
-                                <Doughnut data={donutChartDataCalories} options={donutOptions} />
-                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                                    <span className="text-3xl font-bold ">{caloriesConsumed}</span>
-                                    <span className="text-sm ">of {totalCalories} kcal</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Weight Tracker */}
-
-                        <div className="bg-black/50 p-6 rounded-lg shadow-md w-full md:w-[100%] mb-[20px] overflow-hidden">
-                            <button onClick={() => setAddWeight(true)} className="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition mb-2">Add Weight</button>
-                            <WeightTracker email={email} />
-                        </div>
-                    </div>
-
-                    {/* Lower Chart */}
-                    <div className="min-w-full grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Bar Chart */}
-                        <div className="w-full bg-black/50 p-6 rounded-lg shadow-md">
-                            <h2 className="text-xl font-semibold mb-4">Weekly Exercise Activity</h2>
-                            <div className="h-64">
-                                <Bar data={barChartData} options={barChartOptions} />
-                            </div>
-                        </div>
-
-                        {/* Pie Chart */}
-                        <div className="w-full bg-black/50 p-6 rounded-lg shadow-md ">
-                            <h2 className="text-xl font-semibold mb-4">Daily Exercise Sets Distribution</h2>
-                            <div className="h-64">
-                                <Pie data={pieChartData} options={chartOptions} />
-                            </div>
-                        </div>
-
-
-
-                        {/* Donut Chart */}
-                        <div className="w-full bg-black/50 p-6 rounded-lg shadow-md ">
-                            <h2 className="text-xl font-semibold mb-4">Exercise Form Accuracy</h2>
-                            <div className="h-64">
-                                <Doughnut data={donutChartData} options={chartOptions} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
+    console.log(
+      data?.Date?.excercise.excercise_name,
+      data?.Date?.excercise.exercise_sets
     );
+  }, [data]);
+
+  useEffect(() => {
+    if (addWeight) {
+      document.body.classList.add("overflow-hidden");
+    } else {
+      document.body.classList.remove("overflow-hidden");
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, [addWeight]);
+
+  // Sample data for exercises sets
+  const pieChartData = {
+    // labels: ['Push-ups', 'Squats', 'Pull-ups', 'Lunges', 'Planks'],
+    labels: workoutNames,
+    datasets: [
+      {
+        // data: [30, 25, 15, 20, 10],
+        data: workoutNumber,
+        backgroundColor: [
+          "rgba(255, 99, 132, 0.8)",
+          "rgba(54, 162, 235, 0.8)",
+          "rgba(255, 206, 86, 0.8)",
+          "rgba(75, 192, 192, 0.8)",
+          "rgba(153, 102, 255, 0.8)",
+        ],
+        borderColor: [
+          "rgba(255, 99, 132, 1)",
+          "rgba(54, 162, 235, 1)",
+          "rgba(255, 206, 86, 1)",
+          "rgba(75, 192, 192, 1)",
+          "rgba(153, 102, 255, 1)",
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  // Calorie data
+  const totalCalories = 5050; // Set the total calorie limit
+  const exceededCalories = Math.max(0, caloriesConsumed - totalCalories);
+  const normalCalories = Math.min(caloriesConsumed, totalCalories);
+  const remainingCalories = Math.max(0, totalCalories - caloriesConsumed);
+
+  const donutChartDataCalories = {
+    labels:
+      caloriesConsumed > totalCalories
+        ? ["Within Limit", "Exceeded Calories", "Remaining Calories"]
+        : ["Within Limit", "Remaining Calories"],
+    datasets: [
+      {
+        data:
+          caloriesConsumed > totalCalories
+            ? [normalCalories, exceededCalories, remainingCalories]
+            : [caloriesConsumed, remainingCalories],
+        backgroundColor:
+          caloriesConsumed > totalCalories
+            ? [
+                "rgba(35, 143, 102, 0.8)",
+                "rgb(251, 0, 54 ,0.8)",
+                "rgba(85, 85, 85, 0.8)",
+              ]
+            : ["rgba(35, 143, 102, 0.8)", "rgb(85, 85, 85, 0.8)"],
+        borderColor:
+          caloriesConsumed > totalCalories
+            ? [
+                "rgba(35, 143, 102, 0.8)",
+                "rgb(251, 0, 54 ,0.8)",
+                "rgba(42, 42, 42, 0.8)",
+              ]
+            : ["rgba(54, 162, 235, 0.8)", "rgb(129, 125, 125 , 0.8)"],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  // Sample data for weekly progress
+  const barChartData = {
+    labels: [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ],
+    datasets: [
+      {
+        label: "Number of Exercises",
+        data: [4, 5, 3, 6, 4, 2, 3],
+        backgroundColor: "rgba(54, 162, 235, 0.8)",
+        borderColor: "rgba(54, 162, 235, 1)",
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  // Sample data for exercise accuracy
+  const donutChartData = {
+    labels: ["Correct Form", "Incorrect Form"],
+    datasets: [
+      {
+        data: [75, 25],
+        backgroundColor: ["rgba(75, 192, 192, 0.8)", "rgba(255, 99, 132, 0.8)"],
+        borderColor: ["rgba(75, 192, 192, 1)", "rgba(255, 99, 132, 1)"],
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom" as const,
+      },
+    },
+  };
+
+  const donutOptions = {
+    ...chartOptions,
+    cutout: "60%",
+    plugins: {
+      ...chartOptions.plugins,
+      tooltip: {
+        callbacks: {
+          label: function (context: any) {
+            const label = context.label || "";
+            const value = context.raw || 0;
+            return `${label}: ${value} kcal`;
+          },
+        },
+      },
+    },
+  };
+
+  const barChartOptions = {
+    ...chartOptions,
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          stepSize: 2,
+        },
+      },
+    },
+  };
+
+  return (
+    <div className="flex min-w-screen min-h-screen pb-10 bg-gray-900 text-white ">
+      {addWeight && <AddWeight email={email} close={setAddWeight} />}
+
+      <div className="min-w-screen max-w-6xl mx-auto space-y-8 w-[100%]">
+        <h1 className="text-3xl font-bold  mb-8 mt-4">
+          Exercise Progress Dashboard
+        </h1>
+
+        <div className="flex flex-col flex-wrap ">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Daily Calorie Tracking */}
+            <div className="bg-black/50 p-6 rounded-lg shadow-md w-full md:w-[100%] mb-[20px]">
+              <h2 className="text-xl font-semibold mb-4">
+                Daily Calorie Tracking
+              </h2>
+              <div className="h-64 relative flex items-center justify-center">
+                <Doughnut
+                  data={donutChartDataCalories}
+                  options={donutOptions}
+                />
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                  <span className="text-3xl font-bold ">
+                    {caloriesConsumed}
+                  </span>
+                  <span className="text-sm ">of {totalCalories} kcal</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Weight Tracker */}
+
+            <div className="bg-black/50 p-6 rounded-lg shadow-md w-full md:w-[100%] mb-[20px] overflow-hidden">
+              <button
+                onClick={() => setAddWeight(true)}
+                className="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition mb-2"
+              >
+                Add Weight
+              </button>
+              <WeightTracker email={email} />
+            </div>
+          </div>
+
+          {/* Lower Chart */}
+          <div className="min-w-full grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Bar Chart */}
+            <div className="w-full bg-black/50 p-6 rounded-lg shadow-md">
+              <h2 className="text-xl font-semibold mb-4">
+                Weekly Exercise Activity
+              </h2>
+              <div className="h-64">
+                <Bar data={barChartData} options={barChartOptions} />
+              </div>
+            </div>
+
+            {/* Pie Chart */}
+            <div className="w-full bg-black/50 p-6 rounded-lg shadow-md ">
+              <h2 className="text-xl font-semibold mb-4">
+                Daily Exercise Sets Distribution
+              </h2>
+              <div className="h-64">
+                <Pie data={pieChartData} options={chartOptions} />
+              </div>
+            </div>
+
+            {/* Donut Chart */}
+            <div className="w-full bg-black/50 p-6 rounded-lg shadow-md ">
+              <h2 className="text-xl font-semibold mb-4">
+                Exercise Form Accuracy
+              </h2>
+              <div className="h-64">
+                <Doughnut data={donutChartData} options={chartOptions} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default UserAnayltics;

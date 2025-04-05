@@ -18,7 +18,6 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
   setLoginPage,
   floating = true,
 }) => {
-
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout } = useAuth();
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -28,39 +27,37 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
   const email = user?.email; // Use optional chaining
 
   const DropDownItemsUser = [
-    { name: "Profile", action: () => reDirect() },
+    { name: "Dashboard", action: () => reDirect() },
     { name: "Start Workout", action: () => startWorkout() },
     { name: "Track Food", action: () => trackFood() },
     { name: "Logout", action: () => handleSignOut() },
   ];
 
-  const DropDownItemsAdmin= [
+  const DropDownItemsAdmin = [
     { name: "Dashboard", action: () => reDirectAdmin() },
     { name: "Logout", action: () => handleSignOut() },
   ];
 
   const getUserrole = async () => {
-    console.log(email)
+    console.log(email);
     if (!email) return;
 
-    try{
+    try {
       const userDoc = doc(db, "user", email);
       const userSnapshot = await getDoc(userDoc);
-        
-        if (userSnapshot.exists()) {
-          const userData = userSnapshot.data();
-          console.log("User data:", userData);
-          setUserRole(userData.Role); // Assuming role is stored in the document
-          return; // Assuming role is stored in the document
-        } else {
-          console.log("No such document!");
-        }
-    }
-    catch(e){
-      console.error("Error fetching user role:", e);
 
+      if (userSnapshot.exists()) {
+        const userData = userSnapshot.data();
+        console.log("User data:", userData);
+        setUserRole(userData.Role); // Assuming role is stored in the document
+        return; // Assuming role is stored in the document
+      } else {
+        console.log("No such document!");
+      }
+    } catch (e) {
+      console.error("Error fetching user role:", e);
     }
-  }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -70,11 +67,11 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
       console.log(e);
     }
   };
-  
+
   const reDirect = () => {
     router.push("/UserDashboard");
   };
-  
+
   const reDirectAdmin = () => {
     router.push("/AdminDashboard");
   };
@@ -87,24 +84,22 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
     router.push("/FoodTracking");
   };
 
-  useEffect(()=>{
+  useEffect(() => {
+    const userRole = async () => {
+      await getUserrole();
+    };
+    userRole();
+  }, [email]);
 
-    const userRole =async()=>{
-      await getUserrole()
-    }
-    userRole()
-  }, [email])
-
-  useEffect(()=>{
-
-  }, [userRole])
+  useEffect(() => {}, [userRole]);
 
   return (
     <motion.nav
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`${floating ? "fixed top-0 w-full" : "relative "
-        } left-0 right-0 z-50 bg-black/20 backdrop-blur-sm p-4 border-b border-white/10`}
+      className={`${
+        floating ? "fixed top-0 w-full" : "relative "
+      } left-0 right-0 z-50 bg-black/20 backdrop-blur-sm p-4 border-b border-white/10`}
     >
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         {/* Left: Logo */}
@@ -147,27 +142,25 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
             {isOpen && (
               <div className="absolute right-0 mt-2 bg-white divide-y divide-gray-100 rounded-lg shadow w-44">
                 <ul className="py-2 text-sm text-gray-700">
-                  { userRole =="user" ? DropDownItemsUser.map((item) => (
-                    <li
-                      key={item.name}
-                      className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
-                      onClick={item.action}
-                    >
-                      {item.name}
-                    </li>
-                  )
-                )
-                :
-                DropDownItemsAdmin.map((item) => (
-                  <li
-                    key={item.name}
-                    className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
-                    onClick={item.action}
-                  >
-                    {item.name}
-                  </li>
-                )
-              )}
+                  {userRole == "user"
+                    ? DropDownItemsUser.map((item) => (
+                        <li
+                          key={item.name}
+                          className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+                          onClick={item.action}
+                        >
+                          {item.name}
+                        </li>
+                      ))
+                    : DropDownItemsAdmin.map((item) => (
+                        <li
+                          key={item.name}
+                          className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+                          onClick={item.action}
+                        >
+                          {item.name}
+                        </li>
+                      ))}
                 </ul>
               </div>
             )}

@@ -12,11 +12,9 @@ import { useSpeech } from "@/context/SpeechContext";
 import PredAnalyzer from "@/lib/predAnalyzer";
 import BumpNumber from "@/components/BumpNumber";
 
-import { collection, addDoc, setDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { collection, addDoc } from "firebase/firestore";
 import { useAuth } from "@/context/FirebaseContext";
-import SuccessAlert from "@/components/SuccessAlert";
-// import { useRouter } from "next/router";
 
 const messagesMap = {
   landmarks_not_visible:
@@ -25,47 +23,18 @@ const messagesMap = {
     "Make sure to face sideways! Side view helps track your form more accurately.",
 } as Record<string, string>;
 
-// Format Date time
-const getFormattedDateTime = (): string => {
-  const now = new Date();
+function getLatestRepCounts(data: Record<string, any>[]) {
+  const latest = {} as Record<string, any>;
+  data.forEach((item) => {
+    latest[item.exercise] = {
+      REP_COUNT: item.REP_COUNT,
+      IMPROPER_REP_COUNT: item.IMPROPER_REP_COUNT,
+    };
+  });
+  return latest;
+}
 
-  // Get day, month, and year
-  const day = String(now.getDate()).padStart(2, "0");
-  const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-based
-  const year = now.getFullYear();
-
-  // Get total minutes passed since midnight
-  const totalMinutes = now.getHours() * 60 + now.getMinutes();
-
-  return `${month}-${day}-${year}` + `-${totalMinutes}`;
-};
-
-const getOrCreateSessionId = () => {
-  const existing = localStorage.getItem("workout_session_id");
-  if (existing) {
-    const existingDate = new Date(existing.split("-").slice(0, 3).join("-"));
-    // Check if the date part of the existing ID is today
-
-    const currentDate = new Date();
-
-    if (
-      existingDate.getDate() === currentDate.getDate() &&
-      existingDate.getMonth() === currentDate.getMonth() &&
-      existingDate.getFullYear() === currentDate.getFullYear()
-    ) {
-      return existing;
-    } else {
-      localStorage.removeItem("workout_session_id");
-      console.log("Session ID expired, creating a new one.");
-    }
-  }
-
-  const newId = getFormattedDateTime(); // or crypto.randomUUID();
-  localStorage.setItem("workout_session_id", newId);
-  return newId;
-};
-
-const predAnalyzer = new PredAnalyzer(3);
+const predAnalyzer = new PredAnalyzer(5);
 type WorkoutState = {
   exerciseName: string;
   totalSets: number;
@@ -102,9 +71,6 @@ const LiveStream = () => {
   const webcamRef = useRef<Webcam | null>(null);
   const poseRef = useRef<mediaPose.Pose | null>(null);
   const cameraRef = useRef<any>(null);
-  // const router = useRouter();
-
-  const startTimeRef = useRef<number | null>(null);
   const [prediction, setPrediction] = useState("");
   const [resultImage, setResultImage] = useState("");
   const [currentState, setCurrentState] = useState<ExerciseState | null>(null);
@@ -121,8 +87,6 @@ const LiveStream = () => {
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isPoseReady, setIsPoseReady] = useState(false);
   const [message, setMessage] = useState("");
-  const [confirmEndWorkout, setConfirmEndWorkout] = useState<boolean>(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [workoutState, setWorkoutState] = useState<WorkoutState>({
     exerciseName: "Bicep Curls",
     totalSets: 5,
@@ -136,15 +100,15 @@ const LiveStream = () => {
     elapsedTime: 0, // in seconds (12:45)
   });
 
-  const sessionIdRef = useRef<string>(getOrCreateSessionId());
+  // AFTER LAST UPDATE
+  const [totalSets, setTotalSets] = useState<number>(0);
+  const [isStarted, setIsStarted] = useState<boolean>(false);
+  const [workoutsPerformed, setWorkoutsPerformed] = useState<any[]>([]);
+  const [confirmEndWorkout, setConfirmEndWorkout] = useState<boolean>(false);
 
   const { user } = useAuth();
   const email = user?.email;
 
-  const resetSession = () => {
-    localStorage.removeItem("workout_session_id");
-    sessionIdRef.current = getFormattedDateTime(); // or UUID
-  };
   const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -198,7 +162,7 @@ const LiveStream = () => {
 
   // Update message history when a new message arrives
   useEffect(() => {
-    console.log(lastJsonMessage);
+    // console.log(lastJsonMessage);
     if (!lastJsonMessage) return;
     if (lastJsonMessage.prediction) {
       const lastPrediction = lastJsonMessage.prediction.label;
@@ -222,11 +186,6 @@ const LiveStream = () => {
       setResultImage(lastJsonMessage.image);
     }
     if (lastJsonMessage.state) {
-      console.log("State received:", lastJsonMessage.state);
-      if (!predictionConfirmed) {
-        console.log("Ignoring state update as prediction is not confirmed");
-        return;
-      }
       const newState = lastJsonMessage.state;
       setCurrentState((prevState) => {
         if (JSON.stringify(prevState) !== JSON.stringify(newState)) {
@@ -300,6 +259,7 @@ const LiveStream = () => {
       };
     });
   };
+
   useEffect(() => {
     console.log("captureAndSendFrame", predictionConfirmed);
     if (!predictionConfirmed) return;
@@ -311,23 +271,25 @@ const LiveStream = () => {
   }, [prediction, predictionConfirmed]);
 
   useEffect(() => {
-    if (!webcamRef.current) return;
+    if (isStarted) {
+      if (!webcamRef.current) return;
 
-    cameraRef.current = new camUtils.Camera(webcamRef.current.video!, {
-      onFrame: async () => {
-        if (webcamRef.current && poseRef.current) {
-          await poseRef.current.send({ image: webcamRef.current.video! });
-        }
-      },
-    });
+      cameraRef.current = new camUtils.Camera(webcamRef.current.video!, {
+        onFrame: async () => {
+          if (webcamRef.current && poseRef.current) {
+            await poseRef.current.send({ image: webcamRef.current.video! });
+          }
+        },
+      });
 
-    cameraRef.current.start();
-    setIsCameraReady(true);
+      cameraRef.current.start();
+      setIsCameraReady(true);
 
-    return () => {
-      cameraRef.current.stop();
-    };
-  }, []); // ✅ Runs only once
+      return () => {
+        cameraRef.current.stop();
+      };
+    }
+  }, [isStarted]); // ✅ Runs only once
 
   // ✅ 2️⃣ Pose Model Setup - Runs Once on Mount
   useEffect(() => {
@@ -369,13 +331,13 @@ const LiveStream = () => {
     setIsProcessing(true);
   }, [poseResults, isCameraReady, isPoseReady, prediction, promptUser]);
 
+  //Confirm Exercise
   const handleConfirm = (prediction: string) => {
     setPredictionConfirmed(true);
-    const startTime = Date.now();
-    startTimeRef.current = startTime;
     announceMessage(`Exercise confirmed: ${prediction}`);
     setShowConfirmation(false);
   };
+
   const handleReject = () => {
     setShowConfirmation(false);
     setPrediction("");
@@ -384,116 +346,109 @@ const LiveStream = () => {
     announceMessage("Sorry, please try again");
   };
 
-  const handleRestart = () => {
+  // Change Exercise
+  useEffect(() => {
+    console.log("PERFORMED:  ", workoutsPerformed);
+  }, [workoutsPerformed]);
+
+  const changeWorkout = () => {
+    setWorkoutsPerformed([...workoutsPerformed, currentState]);
+
+    setPrediction("");
+    setPredictionConfirmed(false);
+    setPromptUser(true);
+  };
+  // End Workout Session
+  const endWorkoutSession = async () => {
+    // // ADD A CONFRIM END WORKOUT MENU WITH YES NO OPTIONS
+
+    setConfirmEndWorkout(true);
+    // // console.log(workouts);
+
+    // console.log("PRED:  ", prediction)
+    // console.log("CURRENT:  ", currentState)
+    // console.log("Workouts:  ", workoutsPerformed)
+    // // if(prediction && currentState && workoutsPerformed.length==0){
+    // //   list = [currentState]
+    // // }
+    // // else{
+    // //   list = workoutsPerformed
+    // // }
+
+    // setTimeout(() => {
+    //   logWorkout(list);
+    // }, 100);
+    // setIsStarted(false)
     // setPrediction("");
-    // setPredictionConfirmed(false);
-    // setPromptUser(true);
-    addToDB2();
+  };
+  const confirmEndWorkoutFtn = () => {
+    const workedOutPerformed = [...workoutsPerformed, currentState];
+    setWorkoutsPerformed(workedOutPerformed);
+    logWorkout(workedOutPerformed);
     setPrediction("");
     setPredictionConfirmed(false);
     setPromptUser(true);
     setConfirmEndWorkout(false);
-    setCurrentState(null);
+    sendJsonMessage({ type: "reset" });
   };
 
-  const endWorkoutSession = () => {
-    setConfirmEndWorkout(true);
+  // Format Date time
+  const getFormattedDateTime = (): string => {
+    const now = new Date();
+
+    // Get day, month, and year
+    const day = String(now.getDate()).padStart(2, "0");
+    const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+    const year = now.getFullYear();
+
+    // Get total minutes passed since midnight
+    const totalMinutes = now.getHours() * 60 + now.getMinutes();
+
+    return `${day}-${month}-${year}`;
   };
 
-  const addToDB2 = async () => {
-    if (!currentState || !email) {
-      console.log("No current state or email", currentState, email);
+  // Log Workout
+  const logWorkout = async (workoutsPerformed: any[]) => {
+    console.log("TRACKED WORKOUTS : ", workoutsPerformed);
+    if (workoutsPerformed.length == 0 && !prediction && !currentState) {
+      alert("No Work Outs detected");
       return;
     }
+    try {
+      // Reference the subcollection (users/{userId}/posts)
+      const postsRef = collection(
+        db,
+        "user_exercise_data",
+        email,
+        getFormattedDateTime()
+      );
+      console.log(postsRef);
+      // Add a new document to the subcollection
+      workoutsPerformed.map(async (workout, index) => {
+        console.log("LOGGING workout: ", workout.name, index);
 
-    const { exercise, IMPROPER_REP_COUNT, REP_COUNT } = currentState;
-    const workedOutPerformed = {
-      name: exercise,
-      rep_count: REP_COUNT,
-      improper_rep_count: IMPROPER_REP_COUNT,
-    };
+        const docRef = await addDoc(postsRef, {
+          content: {
+            name: workout.exercise,
+            rep_count: workout.REP_COUNT,
+            improper_rep_count: workout.IMPROPER_REP_COUNT,
+          },
+        });
 
-    const sessionId = sessionIdRef.current;
-
-    // 1. Ensure session metadata exists
-    const sessionMetaRef = doc(
-      db,
-      "user_exercise_data",
-      email,
-      "sessions",
-      sessionId
-    );
-    await setDoc(
-      sessionMetaRef,
-      {
-        started_at: sessionId, // or you can store Date.now() / new Date().toISOString()
-      },
-      { merge: true }
-    );
-
-    // 2. Store exercise under exercises subcollection
-    const exercisesRef = collection(
-      db,
-      "user_exercise_data",
-      email,
-      "sessions",
-      sessionId,
-      "exercises"
-    );
-    const docRef = await addDoc(exercisesRef, {
-      content: workedOutPerformed,
-      recorded_at: new Date().toISOString(),
-    });
-
-    sendJsonMessage({ type: "reset" });
-    console.log("Exercise written with ID:", docRef.id);
+        console.log("workout added successfullly:", docRef.id, workout.name);
+        alert("Post added successfully!");
+      });
+    } catch (error) {
+      console.error("Error adding post:", error);
+    }
   };
-  const addToDB = async () => {
-    if (!currentState) return;
-    const { exercise, IMPROPER_REP_COUNT, REP_COUNT } = currentState;
-    const workedOutPerformed = {
-      name: exercise,
-      rep_count: REP_COUNT,
-      improper_rep_count: IMPROPER_REP_COUNT,
-    };
-    const postsRef = collection(
-      db,
-      "user_exercise_data",
-      email!,
-      "sessions",
-      sessionIdRef.current,
-      "exercises"
-    );
-    const docRef = await addDoc(postsRef, {
-      content: workedOutPerformed,
-    });
-    sendJsonMessage({ type: "reset" });
-    console.log("Document written with ID: ", docRef.id);
-  };
-  const onEndWorkoutSessionConfirmed = async () => {
-    await addToDB2();
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-    }, 3000);
 
-    setPrediction("");
-    setPredictionConfirmed(false);
-    // setPromptUser(true);
-    setConfirmEndWorkout(false);
-    console.log("Setting current state to null");
-    const sessionId = sessionIdRef.current;
-    resetSession();
-    setCurrentState(null);
-
-    setTimeout(() => {
-      window.location.href = `/workoutSummary/${sessionId}`;
-    }, 1500);
-  };
   return (
     <>
-      {showSuccess && (
-        <SuccessAlert message="Saved Exercise Succesfully! Redirecting to Summary page..." />
+      {message && (
+        <div className="mb-4 rounded-xl bg-yellow-500/20 text-yellow-300 px-4 py-2 text-center font-semibold shadow">
+          {message}
+        </div>
       )}
       {confirmEndWorkout && (
         <div
@@ -509,7 +464,7 @@ const LiveStream = () => {
             </h1>
             <div className="flex justify-center gap-6">
               <button
-                onClick={onEndWorkoutSessionConfirmed}
+                onClick={confirmEndWorkoutFtn}
                 className="rounded bg-purple-600 hover:bg-purple-700 px-6 py-3 text-white font-semibold transition-all"
               >
                 Yes
@@ -522,11 +477,6 @@ const LiveStream = () => {
               </button>
             </div>
           </div>
-        </div>
-      )}
-      {message && (
-        <div className="mb-4 rounded-xl bg-yellow-500/20 text-yellow-300 px-4 py-2 text-center font-semibold shadow">
-          {message}
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -552,9 +502,7 @@ const LiveStream = () => {
           </div>
           <div>
             <h3 className="text-gray-400 text-sm">Total Sets</h3>
-            <p className="text-2xl font-bold">
-              {Math.floor((currentState?.REP_COUNT || 0) / 10).toFixed(0)}
-            </p>
+            <p className="text-2xl font-bold">{totalSets}</p>
           </div>
         </div>
 
@@ -766,58 +714,15 @@ const LiveStream = () => {
                 >
                   Prediction: {!prediction ? "Processing..." : prediction}
                   {predAnalyzer.history.length
-                    ? `(${(
+                    ? `(${
                         (predAnalyzer.history.length /
                           predAnalyzer.historySize) *
                         100
-                      ).toFixed(0)}%)`
+                      }%)`
                     : ""}
                 </h1>
               </div>
             </div>
-            {/* <div className="mx-auto max-w-md space-y-4 rounded-xl bg-white p-6 shadow-md">
-          <h2 className="text-xl font-semibold text-gray-800">
-            Latest Exercise Stats
-          </h2>
-          {Object.entries(getLatestRepCounts(allStates)).map(
-            ([exercise, counts]) => (
-              <div key={exercise} className="rounded-lg bg-gray-100 p-4 shadow">
-                <h3 className="text-lg font-bold text-black">
-                  {exercise.toUpperCase()}
-                </h3>
-                <p className="text-gray-700">✅ Reps: {counts.REP_COUNT}</p>
-                <p className="text-red-500">
-                  ❌ Improper Reps: {counts.IMPROPER_REP_COUNT}
-                </p>
-              </div>
-            )
-          )}
-        </div>
-        <div>State: {JSON.stringify(currentState, null, 2)}</div> */}
-
-            {/* <CardFooter>
-          results:
-          {resultImage && (
-            <img src={'data:image/jpeg;base64,' + resultImage} alt="image" />
-          )}
-        </CardFooter> */}
-
-            {/* <div
-          style={{
-            maxHeight: "300px",
-            overflowY: "auto",
-            border: "1px solid gray",
-            padding: "10px",
-          }}
-        >
-          {allStates.length > 0 ? (
-            allStates.map((state, index) => (
-              <pre key={index}>{JSON.stringify(state, null, 2)}</pre>
-            ))
-          ) : (
-            <p>No states received yet.</p>
-          )}
-        </div> */}
           </div>
         </div>
         {/* Live Camera View */}
@@ -866,38 +771,47 @@ const LiveStream = () => {
                   Pause
                 </button>
               )}
-              {predictionConfirmed && (
+              {predictionConfirmed && isStarted && (
                 <div>
                   <button
                     className="w-full py-3 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium transition hover:opacity-90 flex items-center justify-center gap-2"
-                    onClick={handleRestart}
+                    onClick={changeWorkout}
                   >
                     <ArrowRightLeft />
                     Change Exercise
                   </button>
                 </div>
               )}
-
-              <button
-                onClick={endWorkoutSession}
-                //   onClick={endExerciseSession}
-                className="w-full py-3 rounded-lg border border-purple-500 text-purple-400 font-medium transition hover:bg-purple-900/30"
-              >
-                End Workout Session
-              </button>
+              {!isStarted ? (
+                <button
+                  onClick={() => setIsStarted(true)}
+                  className="w-full py-3 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium transition hover:opacity-90 flex items-center justify-center gap-2"
+                >
+                  Start Exercise
+                </button>
+              ) : (
+                <button
+                  onClick={() => endWorkoutSession()}
+                  className="w-full py-3 rounded-lg border border-purple-500 text-purple-400 font-medium transition hover:bg-purple-900/30"
+                >
+                  End Exercise
+                </button>
+              )}
             </div>
           </div>
+          {/* <button
+            onClick={() => endWorkoutSession()}
+            className="w-full py-3 rounded-lg border border-purple-500 text-purple-400 font-medium transition hover:bg-purple-900/30"
+          >
+            End Exercise
+          </button> */}
 
           {/* Timer Card */}
           <div className="bg-[#1E1E3F] rounded-2xl shadow-lg p-5 flex justify-between items-center">
             <div>
               <p className="text-gray-400 text-sm">Workout Time</p>
               <p className="text-2xl font-bold">
-                {formatTime(
-                  startTimeRef.current
-                    ? Math.floor((Date.now() - startTimeRef.current) / 1000)
-                    : 0
-                )}
+                {formatTime(workoutState.elapsedTime)}
               </p>
             </div>
 
