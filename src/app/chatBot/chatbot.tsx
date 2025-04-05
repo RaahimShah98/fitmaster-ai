@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '@/lib/firebase';
-import { setDoc, doc, getDoc } from 'firebase/firestore';
+import { setDoc, doc } from 'firebase/firestore';
 import { useAuth } from '@/context/FirebaseContext';
 
 interface Message {
@@ -210,7 +210,7 @@ const ChatbotInterface = () => {
             });
 
             const data = await response.json();
-            // console.log("data", data.response.content[0]?.text?.value)
+            
             if (data.success) {
                 const formattedData = formatNutritionPlan(data.response.content[0]?.text?.value);
                 const assistantContent = formattedData || 'Sorry, I couldn\'t generate a response';

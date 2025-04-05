@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { User, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { User, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, verifyPasswordResetCode, confirmPasswordReset ,updatePassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -14,6 +14,10 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  handleReset: (oobCode: string, newPassword: string) => Promise<void>;
+  updateUserPassword: (newPassword: string) => Promise<void>;
+
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -47,7 +51,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return true;
     }
     catch (e) {
-      console.log(e.message);
       return { bool: false, message: e.message };
     }
 
@@ -82,11 +85,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         await setDoc(userSetDoc, {
           fullName: user?.email.split("@")[0], email: user?.email, dob: "", weight: 0, height: 0,
-          weight_goal: "", Role: "user" ,status:"Active",subscription:"free" , TC:true , RegisterDate: new Date().toLocaleDateString() , lastUpdate : new Date().toLocaleDateString()
+          weight_goal: "", Role: "user", status: "Active", subscription: "free", TC: true, RegisterDate: new Date().toLocaleDateString(), lastUpdate: new Date().toLocaleDateString()
         });
         console.log("User added successfully!", user?.email);
       }
-      else{
+      else {
         // console.log("USER ALREADY EXISTS IN DB: " , user?.email)
       }
     } catch (error) {
@@ -109,13 +112,55 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await signOut(auth);
     setUser(null);
   };
+  //Reset User Password
+  const resetPassword = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      console.log("Password reset email sent!");
+      return true; // Return true to indicate success
+    } catch (error) {
+      console.error("Error sending password reset email:", error);
+      return error.code; // Return the error code for further handling if needed
+    }
+  }
+
+  // Handle resest password link
+  const handleReset = async (oobCode: string, newPassword: string) => {
+    try {
+      // Verify the password reset code
+      await verifyPasswordResetCode(auth, oobCode);
+
+      // Confirm the password reset with the new password
+      await confirmPasswordReset(auth, oobCode, newPassword);
+      console.log("Password has been reset successfully!");
+    } catch (error) {
+      console.error("Error resetting password:", error);
+    }
+
+  }
+
+  //Updatate User Password 
+  const updateUserPassword = async (newPassword: string) => {
+    if (!user) return; // Ensure user is logged in
+    try {
+      await updatePassword(user, newPassword);
+      console.log("Password updated successfully!");
+      return true
+    } catch (error) {
+      console.error("Error updating password:", error);
+      return false
+    }
+  };
+
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, signIn, signUp, signInWithGoogle }}>
+    <AuthContext.Provider value={{ user, loading, logout, signIn, signUp, signInWithGoogle, resetPassword, handleReset, updateUserPassword  }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+
 
 // Custom hook to use AuthContext
 export const useAuth = () => {

@@ -3,8 +3,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { doc, collection, getDocs } from 'firebase/firestore';
-
+import { doc, collection, getDocs, getDoc } from 'firebase/firestore';
+import { useAuth } from '@/context/FirebaseContext';
+import { useRouter } from "next/navigation";
 import Head from 'next/head';
 import Link from 'next/link';
 import {
@@ -32,6 +33,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import FloatingNav from '@/components/FloatingNav';
 
 // Register ChartJS components
 ChartJS.register(
@@ -51,7 +53,7 @@ type User = {
   fullName: string;
   email: string;
   dob: string;
-  weight:string;
+  weight: string;
   height: string;
   weight_goal: string;
   Role: string;
@@ -80,58 +82,93 @@ const AdminDashboard: React.FC = () => {
   const [filteredUsers, setfilteredUsers] = useState<User[]>([]);
   const [subscriptionData, setSubscriptionData] = useState<number[]>([]);
   const [totalWorkouts, setTotalWorkouts] = useState<number>(0);
-  //get Users FROM DB
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  
+  // Get user auth context
+  const { user } = useAuth();
+  const router = useRouter();
+  const email = user?.email;
 
+  // Check if user is admin immediately on mount
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user || !email) {
+        // No user logged in, redirect
+        router.push("/");
+        return;
+      }
+
+      try {
+        const userDoc = doc(db, "user", email);
+        const userSnapshot = await getDoc(userDoc);
+        
+        if (userSnapshot.exists()) {
+          const userData = userSnapshot.data();
+          if (userData.Role !== "admin") {
+            // User exists but is not admin, redirect
+            router.push("/");
+            return;
+          } else {
+            // User is admin, set state to continue rendering
+            setIsAdmin(true);
+            // Now fetch the data since we know user is admin
+            const data = await getDocData();
+            setUsers(data);
+          }
+        } else {
+          // User document doesn't exist, redirect
+          router.push("/");
+          return;
+        }
+      } catch (e) {
+        console.error("Error checking admin status:", e);
+        // On error, redirect to be safe
+        router.push("/");
+      }
+    };
+
+    checkAdminStatus();
+  }, [email, user, router]);
+
+  // Function to get user data
   const getDocData = async (): Promise<User[]> => {
     const userData = await getDocs(collection(db, "user"));
-    const data = userData.docs.map(doc => doc.data() as User); // Ensure correct type
+    const data = userData.docs.map(doc => doc.data() as User);
     console.log("DATA: ", data);
     return data;
   };
 
+  // Process users data
   useEffect(() => {
-    const fetchData = async () => {
-      const data = await getDocData(); // Await the async function
-      setUsers(data); // Now setting the array properly
-    };
+    if (users.length > 0) {
+      setfilteredUsers(users.filter(user =>
+        user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      ));
 
-    fetchData();
-  }, []);
+      const labels = ['Free', 'Premium', 'Enterprise'];
+      const newSubscriptionData = labels.map(label =>
+        users.filter(user => user.subscriptionType === label).length
+      );
+      setSubscriptionData(newSubscriptionData);
 
+      let totalWorkouts = 0;
+      users.forEach(item => {
+        if (item.workoutsCompleted != null) {
+          totalWorkouts += item.workoutsCompleted;
+        }
+      });
+      setTotalWorkouts(totalWorkouts);
+    }
+  }, [users, searchQuery]);
 
-  // run after fetching user from db
+  // Filter Users based on search
   useEffect(() => {
-
     setfilteredUsers(users.filter(user =>
-      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
     ));
-
-    const labels = ['Free', 'Premium', 'Enterprise'];
-
-    const newSubscriptionData = labels.map(label =>
-      users.filter(user => user.subscriptionType === label).length
-    );
-  
-    setSubscriptionData(newSubscriptionData); // Set the new array directly
-    
-    let totalWorkouts = 0;
-    users.map(item=>{ 
-      console.log(item)
-      if(item.workoutsCompleted!=null){
-        totalWorkouts += item.workoutsCompleted
-      }
-    })
-    setTotalWorkouts(totalWorkouts)
-    
-    console.log("workout: " , totalWorkouts)
-  
-  }, [users]);
-
-  useEffect(() => {
-    console.log("SUBSCRIPTION DATA: ", subscriptionData);
-  }, [ subscriptionData , totalWorkouts]);
-
+  }, [searchQuery, users]);
 
   // Mock data for model usage
   const modelUsageData: ModelUsage[] = [
@@ -180,9 +217,6 @@ const AdminDashboard: React.FC = () => {
     ],
   };
 
-  // Filter users based on search query
-
-
   // CRUD operations
   const addUser = (user: Omit<User, 'id'>) => {
     const newUser = {
@@ -215,11 +249,18 @@ const AdminDashboard: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  // If still checking admin status or redirecting, show nothing
+  if (isAdmin === null) {
+    return null; // Or a loading spinner if preferred
+  }
+
+
   return (
     <div className="flex h-screen bg-gray-900 text-white">
       <Head>
         <title>Admin Dashboard | FitMaster AI</title>
       </Head>
+      <FloatingNav></FloatingNav>
 
       {/* Sidebar - Mobile */}
       <div className={`${sidebarOpen ? 'block' : 'hidden'} fixed inset-0 z-40 lg:hidden`}>
@@ -230,7 +271,6 @@ const AdminDashboard: React.FC = () => {
               <div className="h-8 w-8 bg-purple-600 rounded-md flex items-center justify-center mr-2">
                 <span className="text-white font-bold">F</span>
               </div>
-              <span className="text-xl font-semibold">FitMaster AI</span>
             </div>
             <button
               className="text-gray-400 hover:text-white"
@@ -267,7 +307,7 @@ const AdminDashboard: React.FC = () => {
             <div className="h-8 w-8 bg-purple-600 rounded-md flex items-center justify-center mr-2">
               <span className="text-white font-bold">F</span>
             </div>
-            <span className="text-xl font-semibold">FitMaster AI</span>
+            {/* <span className="text-xl font-semibold">FitMaster AI</span> */}
           </div>
           <nav className="flex-1 px-2 py-4 space-y-1">
             <Link href="#" onClick={() => setCurrentTab('overview')} className={`flex items-center px-2 py-2 text-sm font-medium rounded ${currentTab === 'overview' ? 'bg-purple-700 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
@@ -294,38 +334,7 @@ const AdminDashboard: React.FC = () => {
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Top navigation */}
         <header className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8 bg-gray-800 border-b border-gray-700">
-          <div className="flex items-center lg:hidden">
-            <button
-              className="text-gray-400 hover:text-white"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Bars3Icon className="h-6 w-6" />
-            </button>
-          </div>
-          <div className="flex items-center">
-            <div className="relative ml-4">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search users..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-gray-700 text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="flex items-center">
-            <button className="p-1 rounded-full text-gray-400 hover:text-white">
-              <BellIcon className="h-6 w-6" />
-            </button>
-            <div className="ml-4 relative">
-              <div className="h-8 w-8 rounded-full bg-purple-600 flex items-center justify-center">
-                <span className="text-sm font-medium">A</span>
-              </div>
-            </div>
-          </div>
+          {/* <FloatingNav></FloatingNav> */}
         </header>
 
         {/* Main content area */}
@@ -441,7 +450,7 @@ const AdminDashboard: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                {/* <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                   <h3 className="text-lg font-medium text-gray-300 mb-4">Weekly Workouts</h3>
                   <div className="h-72">
                     <Bar
@@ -478,7 +487,7 @@ const AdminDashboard: React.FC = () => {
                       }}
                     />
                   </div>
-                </div>
+                </div> */}
               </div>
 
               {/* Additional Charts */}
@@ -524,7 +533,7 @@ const AdminDashboard: React.FC = () => {
                                 </div>
                                 <div className="ml-4">
                                   <div className="text-sm font-medium">{user.fullName}</div>
-                                  <div className="text-sm text-gray-400">{user.email}</div>
+                                  <div key={user.email} className="text-sm text-gray-400">{user.email}</div>
                                 </div>
                               </div>
                             </td>
@@ -548,7 +557,20 @@ const AdminDashboard: React.FC = () => {
           {/* Users Tab Content */}
           {currentTab === 'users' && (
             <div>
+              <div className="relative ml-4">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-gray-700 text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
               <div className="flex items-center justify-between mb-4">
+
                 <h2 className="text-xl font-semibold">User Management</h2>
                 <button
                   className="px-4 py-2 bg-purple-600 text-white rounded-md flex items-center hover:bg-purple-700"
@@ -579,7 +601,7 @@ const AdminDashboard: React.FC = () => {
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium">{user.fullName}</div>
-                              <div className="text-sm text-gray-400">{user.email}</div>
+                              <div key={user.email} className="text-sm text-gray-400">{user.email}</div>
                             </div>
                           </div>
                         </td>

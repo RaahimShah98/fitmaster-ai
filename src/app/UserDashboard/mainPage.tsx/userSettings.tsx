@@ -1,9 +1,9 @@
 // pages/user-settings.tsx
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-
 import { db } from '@/lib/firebase';
-import { getDoc, doc, setDoc ,collection } from 'firebase/firestore';
+import { getDoc, doc, setDoc } from 'firebase/firestore';
+import { useAuth } from '@/context/FirebaseContext';
 
 interface UserSettingsProps {
   email: string
@@ -22,14 +22,27 @@ const UserSettings: React.FC<UserSettingsProps> = ({ email }) => {
     subscription: "",
     weight_goal: "",
   });
+  const [newFormData, setNewFormData] = useState({
+    fullName: '',
+    weight: 0,
+    height: 0,
+    lastUpdate: new Date().toLocaleDateString(),
+    RegisterDate: "",
+    dob: "",
+    Role: "user",
+    status: "",
+    subscription: "",
+    weight_goal: "",
+  });
 
   const [weightUnit, setWeightUnit] = useState('kg');
   const [heightUnit, setHeightUnit] = useState('cm');
-  const [newPassword , setNewPassowrd] = useState("")
-  const [confirmPassword , setConfirmPassowrd] = useState("")
+  const [newPassword, setNewPassowrd] = useState("")
+  const [confirmPassword, setConfirmPassowrd] = useState("")
   const [saved, setSaved] = useState(false);
+  const { updateUserPassword } = useAuth()
 
-  // Handle Input change in form
+  // Handle Input change in form  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({
@@ -65,6 +78,10 @@ const UserSettings: React.FC<UserSettingsProps> = ({ email }) => {
   useEffect(() => {
     getUserData()
   }, [])
+  useEffect(() => {
+    setNewFormData(formData)
+
+  }, [formData])
 
   //Update user Weight
   const getFormattedDateTime = (): string => {
@@ -81,9 +98,9 @@ const UserSettings: React.FC<UserSettingsProps> = ({ email }) => {
     return `${day}-${month}-${year}`;
   };
 
-  const updateUserWeight = async ()=>{
-    const postRef = doc(db , "user_weight_tracking" , email , "weights" ,getFormattedDateTime() );
-    await setDoc(postRef , { weight: Number(formData.weight) }, { merge: true }  )
+  const updateUserWeight = async () => {
+    const postRef = doc(db, "user_weight_tracking", email, "weights", getFormattedDateTime());
+    await setDoc(postRef, { weight: Number(formData.weight) }, { merge: true })
 
   }
 
@@ -91,13 +108,13 @@ const UserSettings: React.FC<UserSettingsProps> = ({ email }) => {
   const updateUserDetails = async () => {
     console.log("called")
     const postRef = doc(db, "user", email)
-    const querySnapShot = await setDoc(postRef, formData)
+    const querySnapShot = await setDoc(postRef, newFormData)
     updateUserWeight()
     alert("UPDATED")
     console.log(querySnapShot)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Validation would go here
     if (newPassword.length > 0) {
@@ -109,7 +126,26 @@ const UserSettings: React.FC<UserSettingsProps> = ({ email }) => {
         alert("Password donot match")
         return
       }
+      const response = await updateUserPassword(newPassword)
+      console.log("RESPONSE: ", response)
     }
+    if (formData.weight == 0 || formData.height == 0) {
+      alert("Weight and Height cannot be 0")
+      return
+    }
+    if (formData.weight < 0 || formData.height < 0) {
+      alert("Weight and Height cannot be negative")
+      return
+    }
+    if (formData.weight > 500 || formData.height > 300) {
+      alert("Weight and Height cannot be more than 500 and 300 respectively")
+      return
+    }
+    if (JSON.stringify(formData) == JSON.stringify(newFormData)) {
+      alert("No changes made")
+      return
+    }
+
     updateUserDetails()
 
     console.log('Saving user settings:', formData);
@@ -125,20 +161,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ email }) => {
       </Head>
 
       <div className="min-h-screen bg-black text-white p-6 relative overflow-hidden">
-        {/* Background stars/particles */}
-        {/* <div className="absolute inset-0 opacity-50">
-          {Array.from({ length: 50 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full bg-white w-1 h-1"
-              style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                opacity: Math.random() * 0.7 + 0.3,
-              }}
-            />
-          ))}
-        </div> */}
+
 
         <div className="min-[75%] mx-auto relative z-10">
           <h1 className="text-4xl font-bold text-center mb-8 bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent">
@@ -190,7 +213,8 @@ const UserSettings: React.FC<UserSettingsProps> = ({ email }) => {
                       name="weight"
                       value={formData.weight}
                       onChange={handleInputChange}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-l-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      onWheel={(e) => e.preventDefault()}  // Prevent scrolling from changing the value
+                      className="w-full bg-gray-800 border border-gray-700 rounded-l-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none -moz-appearance-none"
                     />
                     <div className="inline-flex">
                       <button
@@ -246,7 +270,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ email }) => {
                     id="newPassword"
                     name="newPassword"
                     value={newPassword}
-                    onChange={(e) =>setNewPassowrd(e.target.value)}
+                    onChange={(e) => setNewPassowrd(e.target.value)}
                     className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
@@ -261,7 +285,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ email }) => {
                     id="confirmPassword"
                     name="confirmPassword"
                     value={confirmPassword}
-                    onChange={(e) =>setConfirmPassowrd(e.target.value)}
+                    onChange={(e) => setConfirmPassowrd(e.target.value)}
                     className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
@@ -270,7 +294,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ email }) => {
               {/* Save Button */}
               <button
                 type="submit"
-                className="w-full py-2 px-4 rounded-md bg-gradient-to-r from-purple-500 to-blue-500 text-white font-medium hover:from-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200"
+                className="w-full py-2 px-4 rounded-md bg-purple-500 text-white font-medium hover:from-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200"
               >
                 Save Changes
               </button>

@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useState , useEffect} from 'react';
+import { useState} from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -18,6 +18,7 @@ const LoginForm = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [invalid , setInvalid] = useState(false)
+  const [error , setError] = useState("")
   const { signIn , signInWithGoogle } = useAuth();
 
   const router = useRouter();
@@ -28,10 +29,17 @@ const LoginForm = () => {
 
     try {
       const authenticate = await signIn(email, password)
-      console.log(authenticate)
+      console.log("AUTHENTICATION : " , authenticate)
       if(authenticate === "auth/invalid-credential"){
         console.log("Invalid Credentials")
         setInvalid(true)
+        setError("Invalid Credentials")
+        console.log(invalid)
+      }
+      else if(authenticate === "auth/user-disabled"){
+        console.log("User Account Disabled")
+        setInvalid(true)
+        setError("User Account Disabled")
         console.log(invalid)
       }else{
         setInvalid(false)
@@ -98,7 +106,7 @@ const LoginForm = () => {
               </span>
             </div>
           </div>
-          {invalid && <span className='w-full flex justify-center bg-red-100 br-10 p-2'>Invalid Credentials</span>}
+          {invalid && <span className='w-full flex justify-center bg-red-100 br-10 p-2'>{error}</span>}
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -115,7 +123,7 @@ const LoginForm = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Button variant="link" className="px-0 font-normal">
+                <Button variant="link" className="px-0 font-normal" onClick={() => router.replace('/PasswordResetRequest')}>
                   Forgot password?
                 </Button>
               </div>

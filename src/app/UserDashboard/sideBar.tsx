@@ -26,7 +26,7 @@ const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({ setSelectedPage }
   );
   
   const sideBarItems = [
-    { name: "Analytics", icon: <ChartBarIcon className="h-5 w-5 mr-3" />, page: "Analytics" },
+    { name: "Home", icon: <ChartBarIcon className="h-5 w-5 mr-3" />, page: "Analytics" },
     { name: "Settings", icon: <CogIcon className="h-5 w-5 mr-3" />, page: "Settings" },
     // { name: "Goals", icon: <HeartIcon className="h-5 w-5 mr-3" />, page: "Goals" },
     { name: "Start Workout", icon: DumbbellIcon(), page: "StartWorkout" },

@@ -1,11 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Move } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/FirebaseContext";
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 interface FloatingNavProps {
   setLoginPage?: (page: string) => void;
@@ -16,19 +18,49 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
   setLoginPage,
   floating = true,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+
   const [isOpen, setIsOpen] = useState(false);
-
   const { user, logout } = useAuth();
-  const router = useRouter();
-  const email = user?.email || ""; // Use optional chaining
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-  const DropDownItems = [
+  const router = useRouter();
+
+  const email = user?.email; // Use optional chaining
+
+  const DropDownItemsUser = [
     { name: "Profile", action: () => reDirect() },
     { name: "Start Workout", action: () => startWorkout() },
     { name: "Track Food", action: () => trackFood() },
     { name: "Logout", action: () => handleSignOut() },
   ];
+
+  const DropDownItemsAdmin= [
+    { name: "Dashboard", action: () => reDirectAdmin() },
+    { name: "Logout", action: () => handleSignOut() },
+  ];
+
+  const getUserrole = async () => {
+    console.log(email)
+    if (!email) return;
+
+    try{
+      const userDoc = doc(db, "user", email);
+      const userSnapshot = await getDoc(userDoc);
+        
+        if (userSnapshot.exists()) {
+          const userData = userSnapshot.data();
+          console.log("User data:", userData);
+          setUserRole(userData.Role); // Assuming role is stored in the document
+          return; // Assuming role is stored in the document
+        } else {
+          console.log("No such document!");
+        }
+    }
+    catch(e){
+      console.error("Error fetching user role:", e);
+
+    }
+  }
 
   const handleSignOut = async () => {
     try {
@@ -38,9 +70,13 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
       console.log(e);
     }
   };
-
+  
   const reDirect = () => {
     router.push("/UserDashboard");
+  };
+  
+  const reDirectAdmin = () => {
+    router.push("/AdminDashboard");
   };
 
   const startWorkout = () => {
@@ -51,13 +87,24 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
     router.push("/FoodTracking");
   };
 
+  useEffect(()=>{
+
+    const userRole =async()=>{
+      await getUserrole()
+    }
+    userRole()
+  }, [email])
+
+  useEffect(()=>{
+
+  }, [userRole])
+
   return (
     <motion.nav
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`${
-        floating ? "fixed top-0 w-full" : "relative "
-      } left-0 right-0 z-50 bg-black/20 backdrop-blur-sm p-4 border-b border-white/10`}
+      className={`${floating ? "fixed top-0 w-full" : "relative "
+        } left-0 right-0 z-50 bg-black/20 backdrop-blur-sm p-4 border-b border-white/10`}
     >
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         {/* Left: Logo */}
@@ -70,7 +117,7 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
           </Link>
         </div>
 
-        {email == "" && (
+        {!email && (
           <Link
             href={"/LoginForm"}
             onClick={() => setLoginPage && setLoginPage("logIn")}
@@ -81,7 +128,7 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
           </Link>
         )}
 
-        {email != "" && (
+        {email && (
           <div className="relative">
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -100,7 +147,7 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
             {isOpen && (
               <div className="absolute right-0 mt-2 bg-white divide-y divide-gray-100 rounded-lg shadow w-44">
                 <ul className="py-2 text-sm text-gray-700">
-                  {DropDownItems.map((item) => (
+                  { userRole =="user" ? DropDownItemsUser.map((item) => (
                     <li
                       key={item.name}
                       className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
@@ -108,7 +155,19 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
                     >
                       {item.name}
                     </li>
-                  ))}
+                  )
+                )
+                :
+                DropDownItemsAdmin.map((item) => (
+                  <li
+                    key={item.name}
+                    className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+                    onClick={item.action}
+                  >
+                    {item.name}
+                  </li>
+                )
+              )}
                 </ul>
               </div>
             )}
