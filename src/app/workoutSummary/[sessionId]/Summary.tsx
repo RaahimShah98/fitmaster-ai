@@ -16,6 +16,7 @@ import {
 import { db } from "@/lib/firebase";
 import { getDocs, collection, doc, getDoc } from "firebase/firestore";
 import { useAuth } from "@/context/FirebaseContext";
+import MuscleImageOverlay from "@/app/HumanBody/page";
 
 const exerciseToMuscleMap: Record<string, string[]> = {
   "bicep-curl": ["Biceps"],
@@ -29,6 +30,7 @@ interface SessionSummaryProps {
 
 const CoolSummaryPage: React.FC<SessionSummaryProps> = ({ sessionId }) => {
   const [exercises, setExercises] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [workoutNames, setWorkoutNames] = useState<string[]>([]);
   const [workoutReps, setWorkoutReps] = useState<number[]>([]);
   const [accuracyData, setAccuracyData] = useState<number[]>([0, 0]);
@@ -41,7 +43,7 @@ const CoolSummaryPage: React.FC<SessionSummaryProps> = ({ sessionId }) => {
 
   useEffect(() => {
     if (!email || !sessionId) return;
-
+    setLoading(true);
     const fetchExercises = async () => {
       const exercisesRef = collection(
         db,
@@ -102,6 +104,7 @@ const CoolSummaryPage: React.FC<SessionSummaryProps> = ({ sessionId }) => {
           ).toLocaleString()
         );
       }
+      setLoading(false);
     };
 
     fetchExercises();
@@ -134,6 +137,14 @@ const CoolSummaryPage: React.FC<SessionSummaryProps> = ({ sessionId }) => {
     ? Math.round((accuracyData[0] / totalReps) * 100)
     : 0;
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-white">Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen w-full bg-gray-900 text-white p-8">
       <div className="max-w-6xl mx-auto w-full space-y-12">
@@ -146,6 +157,32 @@ const CoolSummaryPage: React.FC<SessionSummaryProps> = ({ sessionId }) => {
             Form Score:{" "}
             <span className="text-white font-semibold">{accuracyPercent}%</span>
           </p>
+        </div>
+
+        <div className="flex justify-center">
+          <div className="bg-black/50 p-4 rounded-lg shadow-lg w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-3 text-center">
+              Muscles Activated
+            </h2>
+            <MuscleImageOverlay workedMuscles={[...musclesWorked]} />
+
+            {musclesWorked.size > 0 ? (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {[...musclesWorked].map((muscle) => (
+                  <span
+                    key={muscle}
+                    className="px-4 py-1 bg-blue-800/60 text-blue-300 rounded-full text-sm font-medium"
+                  >
+                    {muscle}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">
+                No muscles mapped for these exercises.
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -250,26 +287,6 @@ const CoolSummaryPage: React.FC<SessionSummaryProps> = ({ sessionId }) => {
               </li>
             ))}
           </ul>
-        </div>
-
-        <div className="bg-black/50 p-6 rounded-lg shadow-lg">
-          <h2 className="text-xl font-semibold mb-4">Muscles Worked</h2>
-          {musclesWorked.size > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {[...musclesWorked].map((muscle) => (
-                <span
-                  key={muscle}
-                  className="px-4 py-1 bg-blue-800/60 text-blue-300 rounded-full text-sm font-medium"
-                >
-                  {muscle}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400">
-              No muscles mapped for these exercises.
-            </p>
-          )}
         </div>
       </div>
     </div>

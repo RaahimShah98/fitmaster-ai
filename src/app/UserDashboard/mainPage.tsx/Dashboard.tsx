@@ -34,6 +34,13 @@ import {
   fetchCalories,
 } from "@/lib/utils";
 import Link from "next/link";
+import MuscleImageOverlay from "@/app/HumanBody/page";
+
+const exerciseToMuscleMap: Record<string, string[]> = {
+  "bicep-curl": ["Biceps"],
+  squat: ["Quadriceps", "Glutes", "Hamstrings", "Core"],
+  "push-up": ["Chest", "Triceps", "Shoulders"],
+};
 
 export function generateDashboardData(exercises: any[], sessions: any[]) {
   const totalReps = exercises.reduce((sum, e) => sum + e.rep_count, 0);
@@ -162,6 +169,7 @@ export function generateDashboardData(exercises: any[], sessions: any[]) {
     });
 
   const sessionMap = new Map();
+  const muscleSet = new Set<string>();
 
   exercises.forEach((e) => {
     const { sessionId, name, rep_count, improper_rep_count, recorded_at } = e;
@@ -172,6 +180,8 @@ export function generateDashboardData(exercises: any[], sessions: any[]) {
         exercises: [],
       });
     }
+    (exerciseToMuscleMap[e.name] || []).forEach((m) => muscleSet.add(m));
+
     sessionMap.get(sessionId).exercises.push({
       name: name.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase()),
       rep_count,
@@ -190,7 +200,7 @@ export function generateDashboardData(exercises: any[], sessions: any[]) {
       tips: ["Keep chest up", "Knees over toes", "Neutral spine"],
       commonErrors: ["Knees caving", "Heels lifting"],
     },
-    "push ups": {
+    "push up": {
       tips: ["Tight core", "45° elbow angle", "Full extension"],
       commonErrors: ["Sagging hips", "Half reps"],
     },
@@ -244,6 +254,7 @@ export function generateDashboardData(exercises: any[], sessions: any[]) {
     formScore,
     oneRepMaxIncrease,
     activeMinutes,
+    musclesWorked: muscleSet,
   };
 }
 
@@ -353,6 +364,7 @@ const BeautifulDashboardPage = () => {
     formScore = 0,
     oneRepMaxIncrease = 0,
     activeMinutes = 0,
+    musclesWorked = new Set(),
   } = workoutData || {};
 
   const totalCalories = 2500;
@@ -426,6 +438,17 @@ const BeautifulDashboardPage = () => {
             }`}
           >
             Progression
+          </button>
+
+          <button
+            onClick={() => setActiveTab("muscles")}
+            className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
+              activeTab === "muscles"
+                ? "bg-indigo-600 text-white shadow-lg"
+                : "text-slate-300 hover:text-white"
+            }`}
+          >
+            Body Insights
           </button>
         </div>
 
@@ -990,6 +1013,33 @@ const BeautifulDashboardPage = () => {
               </div>
             </div>
           </>
+        )}
+        {activeTab === "muscles" && (
+          <div className="flex justify-center">
+            <div className="bg-black/50 p-4 rounded-lg shadow-lg w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-3 text-center">
+                Muscles Activated this Week
+              </h2>
+              <MuscleImageOverlay workedMuscles={[...musclesWorked]} />
+
+              {musclesWorked.size > 0 ? (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {[...musclesWorked].map((muscle) => (
+                    <span
+                      key={muscle}
+                      className="px-4 py-1 bg-blue-800/60 text-blue-300 rounded-full text-sm font-medium"
+                    >
+                      {muscle}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">
+                  No muscles mapped for these exercises.
+                </p>
+              )}
+            </div>
+          </div>
         )}
         {activeTab === "form" && (
           <>

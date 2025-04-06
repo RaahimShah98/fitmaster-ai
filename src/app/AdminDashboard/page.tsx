@@ -538,44 +538,6 @@ const AdminDashboard: React.FC = () => {
                     />
                   </div>
                 </div>
-                {/* <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                  <h3 className="text-lg font-medium text-gray-300 mb-4">Weekly Workouts</h3>
-                  <div className="h-72">
-                    <Bar
-                      data={workoutCompletionChartData}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: {
-                            position: 'top',
-                            labels: {
-                              color: '#e2e8f0'
-                            }
-                          }
-                        },
-                        scales: {
-                          x: {
-                            grid: {
-                              color: 'rgba(75, 85, 99, 0.2)'
-                            },
-                            ticks: {
-                              color: '#e2e8f0'
-                            }
-                          },
-                          y: {
-                            grid: {
-                              color: 'rgba(75, 85, 99, 0.2)'
-                            },
-                            ticks: {
-                              color: '#e2e8f0'
-                            }
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                </div> */}
               </div>
 
               {/* Additional Charts */}
