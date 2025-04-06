@@ -1,205 +1,27 @@
 "use client";
 
-// import React, { useEffect, useState } from "react";
-// import { getFirestore, collection, getDocs, doc } from "firebase/firestore";
-// import { useAuth } from "@/context/FirebaseContext"; // Adjust if your context is named differently
-
-const exerciseToMuscleMap = {
-  "bicep-curl": ["Biceps"],
-  squat: ["Quadriceps", "Glutes", "Hamstrings", "Core"],
-  "push-up": ["Chest", "Triceps", "Shoulders", "Core"],
-} as Record<string, string[]>;
-
-// const ProgressBar = ({
-//   value,
-//   color = "bg-green-500",
-// }: {
-//   value: number;
-//   color?: string;
-// }) => (
-//   <div className="w-full bg-gray-200 rounded-full h-2">
-//     <div
-//       className={`h-2 rounded-full ${color}`}
-//       style={{ width: `${value}%` }}
-//     />
-//   </div>
-// );
-
-// import { db } from "@/lib/firebase";
-// import { Pie, Bar, Doughnut } from "react-chartjs-2";
-// import {
-//   Chart as ChartJS,
-//   ArcElement,
-//   CategoryScale,
-//   LinearScale,
-//   BarElement,
-//   Title,
-//   Tooltip,
-//   Legend,
-// } from "chart.js";
-
-// ChartJS.register(
-//   ArcElement,
-//   CategoryScale,
-//   LinearScale,
-//   BarElement,
-//   Title,
-//   Tooltip,
-//   Legend
-// );
-
-// interface SessionSummaryProps {
-//   email: string;
-//   sessionId: string;
-// }
-
-// const CoolSummaryPage: React.FC<SessionSummaryProps> = ({ sessionId }) => {
-//   const [exercises, setExercises] = useState<any[]>([]);
-//   const [workoutNames, setWorkoutNames] = useState<string[]>([]);
-//   const [workoutReps, setWorkoutReps] = useState<number[]>([]);
-//   const [accuracyData, setAccuracyData] = useState<number[]>([0, 0]);
-
-//   const { user } = useAuth();
-//   const email = user?.email || ""; // Use optional chaining
-//   useEffect(() => {
-//     if (!email || !sessionId) return;
-
-//     const fetchExercises = async () => {
-//       const exercisesRef = collection(
-//         db,
-//         "user_exercise_data",
-//         email,
-//         "sessions",
-//         sessionId,
-//         "exercises"
-//       );
-//       const snapshot = await getDocs(exercisesRef);
-//       const allExercises = snapshot.docs.map((doc) => doc.data().content);
-//       setExercises(allExercises);
-
-//       const nameCount: Record<string, number> = {};
-//       let correct = 0;
-//       let incorrect = 0;
-
-//       allExercises.forEach((ex) => {
-//         nameCount[ex.name] =
-//           (nameCount[ex.name] || 0) + ex.rep_count + ex.improper_rep_count;
-//         correct += ex.rep_count;
-//         incorrect += ex.improper_rep_count;
-//       });
-
-//       setWorkoutNames(Object.keys(nameCount));
-//       setWorkoutReps(Object.values(nameCount));
-//       setAccuracyData([correct, incorrect]);
-//     };
-
-//     fetchExercises();
-//   }, [email, sessionId]);
-
-//   const pieChartData = {
-//     labels: workoutNames,
-//     datasets: [
-//       {
-//         data: workoutReps,
-//         backgroundColor: [
-//           "#4ADE80",
-//           "#60A5FA",
-//           "#FACC15",
-//           "#F472B6",
-//           "#34D399",
-//         ],
-//         borderWidth: 1,
-//       },
-//     ],
-//   };
-
-//   const donutChartData = {
-//     labels: ["Correct Form", "Incorrect Form"],
-//     datasets: [
-//       {
-//         data: accuracyData,
-//         backgroundColor: ["#10B981", "#EF4444"],
-//         borderWidth: 1,
-//       },
-//     ],
-//   };
-
-//   const chartOptions = {
-//     responsive: true,
-//     maintainAspectRatio: false,
-//     plugins: {
-//       legend: {
-//         position: "bottom" as const,
-//       },
-//     },
-//   };
-
-//   return (
-//     <div className="flex min-h-screen w-full bg-gray-900 text-white p-8">
-//       <div className="max-w-6xl mx-auto w-full space-y-12">
-//         <h1 className="text-4xl font-bold text-center mb-8">Session Summary</h1>
-
-//         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-//           <div className="bg-black/50 p-6 rounded-lg shadow-lg">
-//             <h2 className="text-xl font-semibold mb-4">
-//               Exercise Distribution
-//             </h2>
-//             <div className="h-64">
-//               <Pie data={pieChartData} options={chartOptions} />
-//             </div>
-//           </div>
-
-//           <div className="bg-black/50 p-6 rounded-lg shadow-lg">
-//             <h2 className="text-xl font-semibold mb-4">Form Accuracy</h2>
-//             <div className="h-64">
-//               <Doughnut data={donutChartData} options={chartOptions} />
-//             </div>
-//           </div>
-//         </div>
-
-//         <div className="bg-black/50 p-6 rounded-lg shadow-lg mt-10">
-//           <h2 className="text-xl font-semibold mb-4">Exercises Performed</h2>
-//           <ul className="space-y-2 text-sm">
-//             {exercises.map((ex, i) => (
-//               <li key={i} className="border-b border-gray-700 py-2">
-//                 <strong className="capitalize">{ex.name}</strong> — ✅{" "}
-//                 {ex.rep_count} &nbsp; ❌ {ex.improper_rep_count}
-//               </li>
-//             ))}
-//           </ul>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default CoolSummaryPage;
-
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
 import { db } from "@/lib/firebase";
 import { getDocs, collection, doc, getDoc } from "firebase/firestore";
-import { Pie, Doughnut } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  ArcElement,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
 import { useAuth } from "@/context/FirebaseContext";
 
-ChartJS.register(
-  ArcElement,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+const exerciseToMuscleMap: Record<string, string[]> = {
+  "bicep-curl": ["Biceps"],
+  squat: ["Quadriceps", "Glutes", "Hamstrings", "Core"],
+  "push-up": ["Chest", "Triceps", "Shoulders"],
+};
 
 interface SessionSummaryProps {
   sessionId: string;
@@ -212,6 +34,7 @@ const CoolSummaryPage: React.FC<SessionSummaryProps> = ({ sessionId }) => {
   const [accuracyData, setAccuracyData] = useState<number[]>([0, 0]);
   const [musclesWorked, setMusclesWorked] = useState<Set<string>>(new Set());
   const [sessionDate, setSessionDate] = useState<string>("");
+  const [formTrend, setFormTrend] = useState<any[]>([]);
 
   const { user } = useAuth();
   const email = user?.email || "";
@@ -237,11 +60,20 @@ const CoolSummaryPage: React.FC<SessionSummaryProps> = ({ sessionId }) => {
       let incorrect = 0;
       const muscleSet = new Set<string>();
 
-      allExercises.forEach((ex) => {
+      const trendData: any[] = [];
+
+      allExercises.forEach((ex, i) => {
         nameCount[ex.name] =
           (nameCount[ex.name] || 0) + ex.rep_count + ex.improper_rep_count;
         correct += ex.rep_count;
         incorrect += ex.improper_rep_count;
+
+        trendData.push({
+          set: `Set ${i + 1}`,
+          accuracy: Math.round(
+            (ex.rep_count / (ex.rep_count + ex.improper_rep_count)) * 100
+          ),
+        });
 
         (exerciseToMuscleMap[ex.name] || []).forEach((m) => muscleSet.add(m));
       });
@@ -250,6 +82,7 @@ const CoolSummaryPage: React.FC<SessionSummaryProps> = ({ sessionId }) => {
       setWorkoutReps(Object.values(nameCount));
       setAccuracyData([correct, incorrect]);
       setMusclesWorked(muscleSet);
+      setFormTrend(trendData);
     };
 
     const fetchSessionMeta = async () => {
@@ -266,7 +99,7 @@ const CoolSummaryPage: React.FC<SessionSummaryProps> = ({ sessionId }) => {
         setSessionDate(
           new Date(
             meta.started_at.split("-").slice(0, 3).join("-")
-          ).toDateString()
+          ).toLocaleString()
         );
       }
     };
@@ -275,45 +108,31 @@ const CoolSummaryPage: React.FC<SessionSummaryProps> = ({ sessionId }) => {
     fetchSessionMeta();
   }, [email, sessionId]);
 
-  const pieChartData = {
-    labels: workoutNames,
-    datasets: [
-      {
-        data: workoutReps,
-        backgroundColor: [
-          "#4ADE80",
-          "#60A5FA",
-          "#FACC15",
-          "#F472B6",
-          "#34D399",
-          "#A78BFA",
-          "#FB923C",
-        ],
-        borderWidth: 1,
-      },
-    ],
-  };
+  const pieColors = [
+    "#4ADE80",
+    "#60A5FA",
+    "#FACC15",
+    "#F472B6",
+    "#34D399",
+    "#A78BFA",
+    "#FB923C",
+  ];
+  const donutColors = ["#10B981", "#EF4444"];
 
-  const donutChartData = {
-    labels: ["Correct Form", "Incorrect Form"],
-    datasets: [
-      {
-        data: accuracyData,
-        backgroundColor: ["#10B981", "#EF4444"],
-        borderWidth: 1,
-      },
-    ],
-  };
+  const exercisePieData = workoutNames.map((name, idx) => ({
+    name,
+    value: workoutReps[idx],
+  }));
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "bottom" as const,
-      },
-    },
-  };
+  const formAccuracyData = [
+    { name: "Correct Form", value: accuracyData[0] },
+    { name: "Incorrect Form", value: accuracyData[1] },
+  ];
+
+  const totalReps = accuracyData[0] + accuracyData[1];
+  const accuracyPercent = totalReps
+    ? Math.round((accuracyData[0] / totalReps) * 100)
+    : 0;
 
   return (
     <div className="flex min-h-screen w-full bg-gray-900 text-white p-8">
@@ -321,8 +140,12 @@ const CoolSummaryPage: React.FC<SessionSummaryProps> = ({ sessionId }) => {
         <div className="text-center">
           <h1 className="text-4xl font-bold mb-2">Workout Session Summary</h1>
           {sessionDate && (
-            <p className="text-sm text-gray-400">{`Date: ${sessionDate}`}</p>
+            <p className="text-sm text-gray-400">Date: {sessionDate}</p>
           )}
+          <p className="text-slate-400 text-sm mt-1 italic">
+            Form Score:{" "}
+            <span className="text-white font-semibold">{accuracyPercent}%</span>
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -331,15 +154,89 @@ const CoolSummaryPage: React.FC<SessionSummaryProps> = ({ sessionId }) => {
               Exercise Distribution
             </h2>
             <div className="h-64">
-              <Pie data={pieChartData} options={chartOptions} />
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={exercisePieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={90}
+                    paddingAngle={3}
+                    stroke="rgba(255,255,255,0.1)"
+                    strokeWidth={2}
+                  >
+                    {exercisePieData.map((_, i) => (
+                      <Cell key={i} fill={pieColors[i % pieColors.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
           <div className="bg-black/50 p-6 rounded-lg shadow-lg">
             <h2 className="text-xl font-semibold mb-4">Form Accuracy</h2>
-            <div className="h-64">
-              <Doughnut data={donutChartData} options={chartOptions} />
+            <div className="h-64 relative flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={formAccuracyData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={70}
+                    outerRadius={90}
+                    paddingAngle={4}
+                    stroke="rgba(255,255,255,0.1)"
+                    strokeWidth={2}
+                  >
+                    {formAccuracyData.map((_, index) => (
+                      <Cell key={index} fill={donutColors[index]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                <div className="text-3xl font-bold text-white">
+                  {accuracyData[0]}
+                </div>
+                <div className="text-sm text-gray-400">of {totalReps} reps</div>
+              </div>
             </div>
+          </div>
+        </div>
+
+        <div className="bg-black/50 p-6 rounded-lg shadow-lg">
+          <h2 className="text-xl font-semibold mb-4">Form Accuracy per Set</h2>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={formTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis
+                  dataKey="set"
+                  stroke="#cbd5e1"
+                  tick={{ fill: "#cbd5e1" }}
+                />
+                <YAxis
+                  domain={[0, 100]}
+                  stroke="#cbd5e1"
+                  tick={{ fill: "#cbd5e1" }}
+                />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="accuracy"
+                  stroke="#10B981"
+                  strokeWidth={2}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
