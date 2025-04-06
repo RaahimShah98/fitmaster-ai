@@ -28,6 +28,12 @@ import {
 import { useAuth } from "@/context/FirebaseContext";
 
 import { parseISO, getISOWeek, set, format } from "date-fns";
+import {
+  getExercisesFromSessions,
+  getSessionForDaysAgo,
+  fetchCalories,
+} from "@/lib/utils";
+import Link from "next/link";
 
 export function generateDashboardData(exercises: any[], sessions: any[]) {
   const totalReps = exercises.reduce((sum, e) => sum + e.rep_count, 0);
@@ -241,13 +247,12 @@ export function generateDashboardData(exercises: any[], sessions: any[]) {
   };
 }
 
-import { getExercisesFromSessions, getSessionForDaysAgo } from "@/lib/utils";
-import Link from "next/link";
 const BeautifulDashboardPage = () => {
   // State for active tab
   const [activeTab, setActiveTab] = useState("overview");
   const [workoutData, setWorkoutData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [caloriesConsumed, setCaloriesConsumed] = useState(0);
   const { user } = useAuth();
   const email = user?.email; // Use optional chaining
   // Enhanced color palette
@@ -262,125 +267,6 @@ const BeautifulDashboardPage = () => {
     form: ["#8b5cf6", "#7c3aed"],
   };
 
-  // Exercise form data
-  //   const formAccuracy = [
-  //     { name: "Correct Form", value: 75 },
-  //     { name: "Incorrect Form", value: 25 },
-  //   ];
-
-  // Exercise distribution data
-  //   const exerciseDistribution = [
-  //     { name: "Push-ups", value: 25 },
-  //     { name: "Squats", value: 40 },
-  //     { name: "Planks", value: 15 },
-  //     { name: "Pull-ups", value: 20 },
-  //   ];
-
-  // Strength progress data
-  //   const strengthData = [
-  //     { exercise: "Bench Press", previous: 80, current: 85 },
-  //     { exercise: "Deadlift", previous: 120, current: 130 },
-  //     { exercise: "Squat", previous: 100, current: 115 },
-  //     { exercise: "Shoulder Press", previous: 50, current: 55 },
-  //     { exercise: "Barbell Row", previous: 70, current: 75 },
-  //   ];
-
-  // Weekly workout data
-  //   const weeklyWorkout = [
-  //     { day: "Mon", completed: 3, goal: 4 },
-  //     { day: "Tue", completed: 4, goal: 4 },
-  //     { day: "Wed", completed: 2, goal: 4 },
-  //     { day: "Thu", completed: 4, goal: 4 },
-  //     { day: "Fri", completed: 3, goal: 4 },
-  //     { day: "Sat", completed: 1, goal: 2 },
-  //     { day: "Sun", completed: 0, goal: 1 },
-  //   ];
-
-  // Form improvement over time
-  //   const formProgress = [
-  //     { week: "Week 1", accuracy: 62 },
-  //     { week: "Week 2", accuracy: 68 },
-  //     { week: "Week 3", accuracy: 71 },
-  //     { week: "Week 4", accuracy: 75 },
-  //   ];
-
-  // Exercise performance metrics (radar chart)
-  //   const performanceData = [
-  //     { metric: "Strength", value: 85 },
-  //     { metric: "Endurance", value: 70 },
-  //     { metric: "Flexibility", value: 60 },
-  //     { metric: "Speed", value: 75 },
-  //     { metric: "Balance", value: 65 },
-  //     { metric: "Coordination", value: 80 },
-  //   ];
-
-  // Rep quality data
-  //   const repQualityData = [
-  //     { set: "Set 1", perfect: 8, good: 2, poor: 0 },
-  //     { set: "Set 2", perfect: 7, good: 2, poor: 1 },
-  //     { set: "Set 3", perfect: 5, good: 3, poor: 2 },
-  //     { set: "Set 4", perfect: 6, good: 2, poor: 2 },
-  //   ];
-
-  // Recent workouts
-  //   const recentWorkouts = [
-  //     {
-  //       id: 1,
-  //       name: "Full Body Strength",
-  //       date: "Apr 5",
-  //       duration: "45 min",
-  //       intensity: "High",
-  //       progress: 95,
-  //     },
-  //     {
-  //       id: 2,
-  //       name: "HIIT Cardio",
-  //       date: "Apr 3",
-  //       duration: "30 min",
-  //       intensity: "Very High",
-  //       progress: 100,
-  //     },
-  //     {
-  //       id: 3,
-  //       name: "Upper Body Focus",
-  //       date: "Apr 2",
-  //       duration: "50 min",
-  //       intensity: "Medium",
-  //       progress: 90,
-  //     },
-  //     {
-  //       id: 4,
-  //       name: "Leg Day",
-  //       date: "Mar 31",
-  //       duration: "60 min",
-  //       intensity: "High",
-  //       progress: 85,
-  //     },
-  //   ];
-
-  // Exercise form tips
-  //   const formTips = [
-  //     {
-  //       exercise: "Squats",
-  //       tips: [
-  //         "Keep chest up",
-  //         "Knees tracking over toes",
-  //         "Maintain neutral spine",
-  //       ],
-  //       commonErrors: ["Knees caving in", "Heels raising"],
-  //     },
-  //     {
-  //       exercise: "Push-ups",
-  //       tips: ["Core engaged", "Elbows at 45° angle", "Full range of motion"],
-  //       commonErrors: ["Sagging hips", "Half reps"],
-  //     },
-  //     {
-  //       exercise: "Deadlift",
-  //       tips: ["Hinge at hips", "Flat back", "Bar close to body"],
-  //       commonErrors: ["Rounded back", "Starting with hips too low"],
-  //     },
-  //   ];
-
   useEffect(() => {
     if (!email) return; // Prevent running if email is not available
     console.log("EMAIL INSIDE EFFECT:", email);
@@ -391,10 +277,23 @@ const BeautifulDashboardPage = () => {
       const exercises = await getExercisesFromSessions(email!, sessions);
       console.log("EXERCISES: ", exercises);
       setWorkoutData(generateDashboardData(exercises, sessions));
+
       setLoading(false);
     }
 
     fetchData();
+  }, [email]);
+
+  useEffect(() => {
+    if (!email) return; // Prevent running if email is not available
+
+    const fetchCaloriesFn = async () => {
+      const calories = await fetchCalories(email);
+      console.log("CALORIES CONSUMED: ", calories);
+      setCaloriesConsumed(calories);
+    };
+
+    fetchCaloriesFn();
   }, [email]);
 
   // Custom tooltips
@@ -455,6 +354,16 @@ const BeautifulDashboardPage = () => {
     oneRepMaxIncrease = 0,
     activeMinutes = 0,
   } = workoutData || {};
+
+  const totalCalories = 2500;
+  const remaining = Math.max(totalCalories - caloriesConsumed, 0);
+
+  const donutChartDataCalories = [
+    { name: "Calories Eaten", value: caloriesConsumed },
+    { name: "Remaining", value: remaining },
+  ];
+
+  const donutColors = ["#10b981", "#1e293b"];
 
   if (loading) {
     return (
@@ -557,8 +466,10 @@ const BeautifulDashboardPage = () => {
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold">Weekly Completion</h2>
                   <div className="bg-slate-700 px-3 py-1 rounded-md text-sm">
-                    <span className="text-emerald-400 font-medium">17</span> of
-                    23 sets
+                    <span className="text-emerald-400 font-medium">
+                      {totalSets}
+                    </span>{" "}
+                    of 23 sets
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={300}>
@@ -607,7 +518,55 @@ const BeautifulDashboardPage = () => {
                 </ResponsiveContainer>
               </div>
               {/* Performance Radar Chart */}
-              <div className="bg-slate-800 p-6 rounded-xl shadow-xl border border-slate-700/50 hover:shadow-2xl transition-all duration-300">
+
+              <div className="bg-black/50 p-6 rounded-lg shadow-md w-full md:w-[100%] mb-[20px]">
+                <h2 className="text-xl font-semibold text-white mb-4">
+                  Daily Calorie Tracking
+                </h2>
+                <div className="h-64 relative flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={donutChartDataCalories}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={70}
+                        outerRadius={90}
+                        paddingAngle={2}
+                        stroke="rgba(255,255,255,0.1)"
+                        strokeWidth={2}
+                      >
+                        {donutChartDataCalories.map((_, index) => (
+                          <Cell
+                            key={index}
+                            fill={donutColors[index % donutColors.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#1e293b",
+                          borderColor: "#334155",
+                        }}
+                        labelStyle={{ color: "#cbd5e1" }}
+                        itemStyle={{ color: "#e2e8f0" }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                    <span className="text-3xl font-bold text-white">
+                      {caloriesConsumed}
+                    </span>
+                    <span className="text-sm text-slate-400">
+                      of {totalCalories} kcal
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {/* <div className="bg-slate-800 p-6 rounded-xl shadow-xl border border-slate-700/50 hover:shadow-2xl transition-all duration-300">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold">Performance Matrix</h2>
                   <div className="bg-slate-700 px-3 py-1 rounded-md text-sm">
@@ -635,7 +594,7 @@ const BeautifulDashboardPage = () => {
                     <Tooltip />
                   </RadarChart>
                 </ResponsiveContainer>
-              </div>
+              </div> */}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

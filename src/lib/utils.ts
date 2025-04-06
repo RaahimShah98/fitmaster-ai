@@ -7,6 +7,32 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const getFormattedDateTime = (): string => {
+  const now = new Date();
+
+  // Get day, month, and year
+  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+  const year = now.getFullYear();
+
+  // Get total minutes passed since midnight
+  const totalMinutes = now.getHours() * 60 + now.getMinutes();
+
+  return `${day}-${month}-${year}`;
+};
+
+export async function fetchCalories(email: string) {
+  const postsRef = collection(db, "food_logs", email, getFormattedDateTime());
+  // console.log(postsRef)
+  const querySnapshot = await getDocs(postsRef);
+
+  const totalCalories = querySnapshot.docs.reduce((sum, doc) => {
+    return doc.data().content.calories + sum;
+  }, 0);
+  // console.log("CALORIES: ", totalCalories)
+  return totalCalories;
+}
+
 export async function getSessionForDaysAgo(daysAgo: number, email: string) {
   const sessionsRef = collection(db, "user_exercise_data", email, "sessions");
   const daysAgoDate = new Date();
