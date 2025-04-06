@@ -329,6 +329,31 @@ const LiveStream = () => {
     };
   }, []); // ✅ Runs only once
 
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>(
+    [] as MediaDeviceInfo[]
+  );
+
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+
+  // Get available media devices
+  useEffect(() => {
+    navigator.mediaDevices.enumerateDevices().then((mediaDevices) => {
+      const videoDevices = mediaDevices.filter(
+        (device) => device.kind === "videoinput"
+      );
+
+      setDevices(videoDevices as any);
+      const uvcDevice = videoDevices.find((device) =>
+        device.label.toUpperCase().includes("UVC")
+      );
+      if (uvcDevice) {
+        setSelectedDeviceId(uvcDevice.deviceId as any);
+      } else {
+        setSelectedDeviceId(videoDevices[0]?.deviceId as any);
+      }
+    });
+  }, []);
+
   // ✅ 2️⃣ Pose Model Setup - Runs Once on Mount
   useEffect(() => {
     const pose = new mediaPose.Pose({
@@ -740,10 +765,31 @@ const LiveStream = () => {
             </div>
             <div className="relative flex flex-row justify-center">
               {/* <div className="relative"> */}
+              <div className="absolute top-0 right-0 z-10">
+                <select
+                  className="bg-zinc-800 text-white text-sm px-3 py-1 rounded-md shadow-sm border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  onChange={(e) => setSelectedDeviceId(e.target.value)}
+                  value={selectedDeviceId || ""}
+                >
+                  <option value="" disabled>
+                    Select Camera
+                  </option>
+                  {devices.map((device, index) => (
+                    <option value={device.deviceId} key={device.deviceId}>
+                      {device.label || `Camera ${index + 1}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <Webcam
                 ref={webcamRef}
                 screenshotFormat="image/jpeg"
                 className="w-full rounded"
+                videoConstraints={{
+                  deviceId: selectedDeviceId
+                    ? { exact: selectedDeviceId }
+                    : undefined,
+                }}
               />
               {lastJsonMessage?.image && predictionConfirmed && (
                 <img
