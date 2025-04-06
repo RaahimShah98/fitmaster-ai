@@ -10,6 +10,7 @@ import getFoodItems from './FoodDatabase';
 import { db } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { useAuth } from '@/context/FirebaseContext';
+import { useRouter } from 'next/navigation';
 
 type DetectedFood = {
   id: string;
@@ -36,6 +37,9 @@ export default function FoodTracker() {
   const [proteins, setProteins] = useState<number>(0);
   const [carbs, setCarbs] = useState<number>(0);
   const [fats, setFats] = useState<number>(0);
+  const [success, setSuccess] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -154,18 +158,28 @@ export default function FoodTracker() {
 
     try {
       // Reference the subcollection (users/{userId}/posts)
+
+      if(detectedFoods.length == 0){
+        setErrorMessage("No food detected")
+        return;
+      }
+      setErrorMessage(null)
       const postsRef = collection(db, "food_logs", email, getFormattedDateTime());
       console.log(postsRef)
       // Add a new document to the subcollection
-      foodNutrients.map(async (food ,index) => {
-        console.log("LOGGING FOOD: ", food.name , index);
+      foodNutrients.map(async (food, index) => {
+        console.log("LOGGING FOOD: ", food.name, index);
 
         const docRef = await addDoc(postsRef, {
           content: food,
         });
 
-        console.log("Food added successfullly:", docRef.id , food.name);
-        alert("Post added successfully!");
+        console.log("Food added successfullly:", docRef.id, food.name);
+        setSuccess(true)
+        setTimeout(() => {
+          setSuccess(false)
+          router.push("/UserDashboard")
+        }, 2000)
       })
 
     } catch (error) {
@@ -327,7 +341,7 @@ export default function FoodTracker() {
                   {/* Table Rows (Example) */}
                   {detectedFoods.map((food, index) => (
                     <React.Fragment key={index}>
-                      <div className="p-2 border-b border-gray-200" onClick={() => setSelectedFood(food.label)}>{food.label}</div>
+                      <div className="p-2 border-b border-gray-200" onClick={() => setSelectedFood(food.label)}><span className='underline'>{food.label}</span></div>
                       <div className="p-2 border-b border-gray-200">1</div>
                     </ React.Fragment>
                   ))}
@@ -341,6 +355,14 @@ export default function FoodTracker() {
             {selectedFood && (
               <NutritionalDetailsModal food={selectedFood} foodNutrients={foodNutrients} onClose={closeModal} />
             )}
+            {success && <div className='rounded p-6 bg-green-600 text-white'>
+              Food Added Sucessfully
+
+            </div>}
+            {errorMessage && <div className='rounded p-6 bg-red-600 text-white'>
+              {errorMessage}
+
+            </div>}
             <div className='pt-4 w-full'>
               <button
                 onClick={logMeal}
