@@ -90,24 +90,81 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
     }
   };
 
+  async function getSessionForDaysAgo(daysAgo: number) {
+    const sessionsRef = collection(db, "user_exercise_data", email, "sessions");
+    const daysAgoDate = new Date();
+    daysAgoDate.setDate(daysAgoDate.getDate() - daysAgo);
+    const snapshot = await getDocs(sessionsRef);
+    const recentSessions: string[] = [];
+
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      const sessionTime = new Date(
+        data.started_at.split("-").slice(0, 3).join("-")
+      );
+      if (sessionTime >= daysAgoDate) {
+        recentSessions.push(docSnap.id); // sessionId
+      }
+    });
+
+    return recentSessions;
+  }
+
+  const getExercisesFromSessions = async (
+    email: string,
+    sessionIds: string[]
+  ) => {
+    const allExercises: any[] = [];
+
+    for (const sessionId of sessionIds) {
+      const exercisesRef = collection(
+        db,
+        "user_exercise_data",
+        email,
+        "sessions",
+        sessionId,
+        "exercises"
+      );
+
+      const snapshot = await getDocs(exercisesRef);
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        allExercises.push({
+          ...data.content,
+          sessionId,
+          recorded_at: data.recorded_at,
+        });
+      });
+    }
+
+    return allExercises;
+  };
   //GET USER WORKOUT DATA
   const getWorkoutData = async () => {
     if (!email) return;
     console.log("EAMIL: ", email);
     try {
+      const sessions = await getSessionForDaysAgo(7);
+      console.log("SESSIONS: ", sessions);
+      const exercises = await getExercisesFromSessions(email, sessions);
+      console.log("EXERCISES: ", exercises);
+      setWorkoutData(exercises);
       // const userRef = collection(db, "user_exercise_data", email, date);
-      const userRef = collection(db, "user_exercise_data", email, "25-03-2025");
-      // console.log("REF:" , userRef)
-      const userSnap = await getDocs(userRef);
-
-      // console.log("SNAP: ", userSnap.docs)
-      const workouts = userSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      setWorkoutData(workouts);
-      console.log(workouts);
+      //   const userRef = collection(db, "user_exercise_data", email, "25-03-2025");
+      //   // console.log("REF:" , userRef)
+      //   const userSnap = await getDocs(userRef);
+      //   // console.log("SNAP: ", userSnap.docs)
+      //   const workouts = userSnap.docs.map((doc) => ({
+      //     id: doc.id,
+      //     ...doc.data(),
+      //   }));
+      //   const workouts = snapshot.docs.map((doc) => ({
+      //     id: doc.id,
+      //     ...doc.data(),
+      //   }));
+      //   console.log("WORKOUTS: ", workouts);
+      //   setWorkoutData(workouts);
+      //   console.log(workouts);
     } catch (e) {
       console.log("FAILED TO FETCH", e.message);
       return;
@@ -116,11 +173,20 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
 
   // Set Excercise Sets Distribution Data
   const setDistributionData = () => {
-    const exerciseCount = workoutData.reduce((acc, item) => {
-      const name = item.content.name;
-      acc[name] = (acc[name] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const exerciseCount = workoutData
+      .filter((item) => {
+        // only include items from last 24 hours
+        const recordedDate = new Date(item.recorded_at);
+        const currentDate = new Date();
+        const diff = currentDate.getTime() - recordedDate.getTime();
+        const diffHours = diff / (1000 * 60 * 60);
+        return diffHours <= 24; // filter items from the last 24 hours
+      })
+      .reduce((acc, item) => {
+        const name = item.name;
+        acc[name] = (acc[name] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
 
     setWorkoutName(Object.keys(exerciseCount));
     setWorkoutNumber(Object.values(exerciseCount));
@@ -209,7 +275,7 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
   };
 
   // Calorie data
-  const totalCalories = 5050; // Set the total calorie limit
+  const totalCalories = 2500; // Set the total calorie limit
   const exceededCalories = Math.max(0, caloriesConsumed - totalCalories);
   const normalCalories = Math.min(caloriesConsumed, totalCalories);
   const remainingCalories = Math.max(0, totalCalories - caloriesConsumed);
@@ -247,39 +313,54 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
   };
 
   // Sample data for weekly progress
-  const barChartData = {
-    labels: [
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-      "Sunday",
-    ],
-    datasets: [
-      {
-        label: "Number of Exercises",
-        data: [4, 5, 3, 6, 4, 2, 3],
-        backgroundColor: "rgba(54, 162, 235, 0.8)",
-        borderColor: "rgba(54, 162, 235, 1)",
-        borderWidth: 1,
-      },
-    ],
-  };
+  //   const barChartData = {
+  //     labels: [
+  //       "Monday",
+  //       "Tuesday",
+  //       "Wednesday",
+  //       "Thursday",
+  //       "Friday",
+  //       "Saturday",
+  //       "Sunday",
+  //     ],
+  //     datasets: [
+  //       {
+  //         label: "Number of Exercises",
+  //         data: [4, 5, 3, 6, 4, 2, 3],
+  //         backgroundColor: "rgba(54, 162, 235, 0.8)",
+  //         borderColor: "rgba(54, 162, 235, 1)",
+  //         borderWidth: 1,
+  //       },
+  //     ],
+  //   };
 
   // Sample data for exercise accuracy
-  const donutChartData = {
-    labels: ["Correct Form", "Incorrect Form"],
-    datasets: [
-      {
-        data: [75, 25],
-        backgroundColor: ["rgba(75, 192, 192, 0.8)", "rgba(255, 99, 132, 0.8)"],
-        borderColor: ["rgba(75, 192, 192, 1)", "rgba(255, 99, 132, 1)"],
-        borderWidth: 1,
-      },
-    ],
-  };
+
+  function generateDonutChartData(workoutData: any) {
+    let totalCorrect = 0;
+    let totalIncorrect = 0;
+
+    workoutData.forEach(({ rep_count, improper_rep_count }: any) => {
+      const correct = rep_count - improper_rep_count;
+      totalCorrect += correct;
+      totalIncorrect += improper_rep_count;
+    });
+
+    return {
+      labels: ["Correct Form", "Incorrect Form"],
+      datasets: [
+        {
+          data: [totalCorrect, totalIncorrect],
+          backgroundColor: [
+            "rgba(75, 192, 192, 0.8)",
+            "rgba(255, 99, 132, 0.8)",
+          ],
+          borderColor: ["rgba(75, 192, 192, 1)", "rgba(255, 99, 132, 1)"],
+          borderWidth: 1,
+        },
+      ],
+    };
+  }
 
   const chartOptions = {
     responsive: true,
@@ -320,6 +401,82 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
     },
   };
 
+  function generateDayExerciseStackedData(workoutData: any) {
+    const dayMap = {
+      0: "Sunday",
+      1: "Monday",
+      2: "Tuesday",
+      3: "Wednesday",
+      4: "Thursday",
+      5: "Friday",
+      6: "Saturday",
+    };
+
+    const exerciseDayMap = {} as any; // { 'Bicep Curl|Monday': { correct: X, incorrect: Y } }
+    const daysSet = new Set() as any;
+    const exercisesSet = new Set() as any;
+
+    workoutData.forEach(
+      ({ name, rep_count, improper_rep_count, recorded_at }: any) => {
+        const date = new Date(recorded_at);
+        const day = dayMap[date.getDay()];
+
+        const key = `${name}|${day}`;
+        if (!exerciseDayMap[key]) {
+          exerciseDayMap[key] = { correct: 0, incorrect: 0 };
+        }
+
+        const correctReps = rep_count - improper_rep_count;
+        exerciseDayMap[key].correct += correctReps;
+        exerciseDayMap[key].incorrect += improper_rep_count;
+
+        daysSet.add(day);
+        exercisesSet.add(name);
+      }
+    );
+
+    const sortedDays = Array.from(daysSet).sort(
+      (a, b) =>
+        Object.entries(dayMap).find(([_, v]) => v === a)[0] -
+        Object.entries(dayMap).find(([_, v]) => v === b)[0]
+    );
+
+    const datasets = [];
+
+    exercisesSet.forEach((exercise) => {
+      const correctData = [];
+      const incorrectData = [];
+
+      sortedDays.forEach((day) => {
+        const key = `${exercise}|${day}`;
+        const entry = exerciseDayMap[key] || { correct: 0, incorrect: 0 };
+        correctData.push(entry.correct);
+        incorrectData.push(entry.incorrect);
+      });
+
+      datasets.push({
+        label: `${exercise} - Correct`,
+        data: correctData,
+        backgroundColor: "rgba(75, 192, 192, 0.8)",
+        stack: exercise,
+      });
+
+      datasets.push({
+        label: `${exercise} - Incorrect`,
+        data: incorrectData,
+        backgroundColor: "rgba(255, 99, 132, 0.8)",
+        stack: exercise,
+      });
+    });
+
+    return {
+      labels: sortedDays,
+      datasets,
+    };
+  }
+
+  const barChartData = generateDayExerciseStackedData(workoutData);
+  const donutChartData = generateDonutChartData(workoutData);
   return (
     <div className="flex min-w-screen min-h-screen pb-10 bg-gray-900 text-white ">
       {addWeight && <AddWeight email={email} close={setAddWeight} />}
