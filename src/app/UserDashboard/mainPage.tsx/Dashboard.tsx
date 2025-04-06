@@ -177,6 +177,7 @@ export function generateDashboardData(exercises: any[], sessions: any[]) {
       sessionMap.set(sessionId, {
         sessionId,
         date: format(parseISO(recorded_at), "MMM dd, yyyy • h:mm a"),
+        raw_date: recorded_at,
         exercises: [],
       });
     }
@@ -419,7 +420,7 @@ const BeautifulDashboardPage = () => {
           >
             Exercise Sessions
           </button>
-          <button
+          {/* <button
             onClick={() => setActiveTab("form")}
             className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
               activeTab === "form"
@@ -428,7 +429,7 @@ const BeautifulDashboardPage = () => {
             }`}
           >
             Form Analysis
-          </button>
+          </button> */}
           <button
             onClick={() => setActiveTab("progression")}
             className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
@@ -448,7 +449,7 @@ const BeautifulDashboardPage = () => {
                 : "text-slate-300 hover:text-white"
             }`}
           >
-            Body Insights
+            Body & Form Insights
           </button>
         </div>
 
@@ -857,55 +858,66 @@ const BeautifulDashboardPage = () => {
                 Recent Sessions
               </h2>
 
-              {sessionSummaries.map((session) => (
-                <div
-                  key={session.sessionId}
-                  className="bg-slate-800 p-6 rounded-xl shadow-md border border-slate-700/50"
-                >
-                  <div className="flex justify-between items-center mb-4">
-                    <div>
-                      <p className="text-sm text-slate-400">Session Date</p>
-                      <p className="text-white font-semibold">{session.date}</p>
-                    </div>
-                    <Link
-                      href={`/workoutSummary/${session.sessionId}`}
-                      className="inline-block px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-semibold shadow-md hover:shadow-lg transition"
-                    >
-                      View Session Summary
-                    </Link>
-                  </div>
+              {sessionSummaries
+                .sort((a, b) => {
+                  const dateA = new Date(a.raw_date);
+                  const dateB = new Date(b.raw_date);
+                  console.log("DATE A: ", dateA, a);
+                  console.log("DATE B: ", dateB, b);
+                  return dateB.getTime() - dateA.getTime();
+                })
 
-                  <div>
-                    <h3 className="text-sm text-slate-400 mb-2 font-medium">
-                      Exercises Performed
-                    </h3>
-                    <table className="min-w-full text-left text-sm text-slate-300">
-                      <thead>
-                        <tr className="border-b border-slate-700">
-                          <th className="py-1 pr-4 font-medium text-slate-400">
-                            Exercise
-                          </th>
-                          <th className="py-1 pr-4 font-medium text-slate-400">
-                            Reps
-                          </th>
-                          <th className="py-1 font-medium text-slate-400">
-                            Improper
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {session.exercises.map((ex, idx) => (
-                          <tr key={idx} className="hover:bg-slate-700/30">
-                            <td className="py-1 pr-4">{ex.name}</td>
-                            <td className="py-1 pr-4">{ex.rep_count}</td>
-                            <td className="py-1">{ex.improper_rep_count}</td>
+                .map((session) => (
+                  <div
+                    key={session.sessionId}
+                    className="bg-slate-800 p-6 rounded-xl shadow-md border border-slate-700/50"
+                  >
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <p className="text-sm text-slate-400">Session Date</p>
+                        <p className="text-white font-semibold">
+                          {session.date}
+                        </p>
+                      </div>
+                      <Link
+                        href={`/workoutSummary/${session.sessionId}`}
+                        className="inline-block px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-semibold shadow-md hover:shadow-lg transition"
+                      >
+                        View Session Summary
+                      </Link>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm text-slate-400 mb-2 font-medium">
+                        Exercises Performed
+                      </h3>
+                      <table className="min-w-full text-left text-sm text-slate-300">
+                        <thead>
+                          <tr className="border-b border-slate-700">
+                            <th className="py-1 pr-4 font-medium text-slate-400">
+                              Exercise
+                            </th>
+                            <th className="py-1 pr-4 font-medium text-slate-400">
+                              Reps
+                            </th>
+                            <th className="py-1 font-medium text-slate-400">
+                              Improper
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {session.exercises.map((ex, idx) => (
+                            <tr key={idx} className="hover:bg-slate-700/30">
+                              <td className="py-1 pr-4">{ex.name}</td>
+                              <td className="py-1 pr-4">{ex.rep_count}</td>
+                              <td className="py-1">{ex.improper_rep_count}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1015,34 +1027,33 @@ const BeautifulDashboardPage = () => {
           </>
         )}
         {activeTab === "muscles" && (
-          <div className="flex justify-center">
-            <div className="bg-black/50 p-4 rounded-lg shadow-lg w-full max-w-md">
-              <h2 className="text-xl font-semibold mb-3 text-center">
-                Muscles Activated this Week
-              </h2>
-              <MuscleImageOverlay workedMuscles={[...musclesWorked]} />
-
-              {musclesWorked.size > 0 ? (
-                <div className="flex flex-wrap gap-2 mt-4">
-                  {[...musclesWorked].map((muscle) => (
-                    <span
-                      key={muscle}
-                      className="px-4 py-1 bg-blue-800/60 text-blue-300 rounded-full text-sm font-medium"
-                    >
-                      {muscle}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-400">
-                  No muscles mapped for these exercises.
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-        {activeTab === "form" && (
           <>
+            <div className="flex justify-center">
+              <div className="bg-black/50 p-4 rounded-lg shadow-lg w-full max-w-md">
+                <h2 className="text-xl font-semibold mb-3 text-center">
+                  Muscles Activated this Week
+                </h2>
+                <MuscleImageOverlay workedMuscles={[...musclesWorked]} />
+
+                {musclesWorked.size > 0 ? (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {[...musclesWorked].map((muscle) => (
+                      <span
+                        key={muscle}
+                        className="px-4 py-1 bg-blue-800/60 text-blue-300 rounded-full text-sm font-medium"
+                      >
+                        {muscle}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400">
+                    No muscles mapped for these exercises.
+                  </p>
+                )}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {formTips.map((entry, i) => (
                 <div
@@ -1077,6 +1088,9 @@ const BeautifulDashboardPage = () => {
             </div>
           </>
         )}
+        {/* {activeTab === "form" && (
+       
+        )} */}
         {activeTab === "progression" && (
           <>
             <div className="bg-slate-800 p-6 rounded-xl shadow-xl border border-slate-700/50">
