@@ -48,7 +48,7 @@ const ChatbotInterface = () => {
 
                 if (data.success) {
                     setIsInitialized(true);
-                    console.log('Assistant initialized:', data);
+                    // console.log('Assistant initialized:', data);
 
                     // Add welcome message
                     setMessages([
