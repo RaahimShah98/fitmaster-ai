@@ -3,7 +3,7 @@ class PredAnalyzer {
   public historySize: number;
   private consistencyThreshold: number;
 
-  constructor(historySize: number = 5, consistencyThreshold: number = 0.7) {
+  constructor(historySize: number = 5, consistencyThreshold: number = 0.65) {
     this.historySize = historySize;
     this.consistencyThreshold = consistencyThreshold;
   }

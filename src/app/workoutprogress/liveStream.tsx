@@ -122,6 +122,7 @@ const LiveStream = () => {
   const [isPoseReady, setIsPoseReady] = useState(false);
   const [message, setMessage] = useState("");
   const [confirmEndWorkout, setConfirmEndWorkout] = useState<boolean>(false);
+  const [isStarted, setIsStarted] = useState<boolean>(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [workoutState, setWorkoutState] = useState<WorkoutState>({
     exerciseName: "Bicep Curls",
@@ -311,7 +312,7 @@ const LiveStream = () => {
   }, [prediction, predictionConfirmed]);
 
   useEffect(() => {
-    if (!webcamRef.current) return;
+    if (!webcamRef.current || !isStarted) return;
 
     cameraRef.current = new camUtils.Camera(webcamRef.current.video!, {
       onFrame: async () => {
@@ -327,7 +328,7 @@ const LiveStream = () => {
     return () => {
       cameraRef.current.stop();
     };
-  }, []); // ✅ Runs only once
+  }, [isStarted]);
 
   const [devices, setDevices] = useState<MediaDeviceInfo[]>(
     [] as MediaDeviceInfo[]
@@ -661,13 +662,16 @@ const LiveStream = () => {
         <div className="flex-1">
           {promptUser && (
             <div className="fixed inset-0 z-50 flex  items-center justify-center bg-black bg-opacity-50">
-              <div className="w-[400px] rounded-lg bg-white p-6 text-black shadow-lg">
+              <div className="w-[450px] rounded-lg bg-white p-6 text-black shadow-lg">
                 <h2 className="text-lg font-bold ">Perform Exercise</h2>
                 <p>
                   Move and perform an exercise so we can detect it. Please make
-                  sure your full body is visible in the camera.
+                  sure your full body is visible in the camera. Click on "Start
+                  Exercise" when you're ready.
                 </p>
-                <Button onClick={() => setPromptUser(false)}>OK</Button>
+                <Button className="mt-2" onClick={() => setPromptUser(false)}>
+                  OK
+                </Button>
               </div>
             </div>
           )}
@@ -800,8 +804,9 @@ const LiveStream = () => {
               )}
 
               <div
-                className="color absolute left-[31%] top-0 z-10 mt-4 text-center
-        "
+                className={`color absolute left-[${
+                  isStarted ? "31%" : "38%"
+                }] top-0 z-10 mt-4 text-center`}
               >
                 <h1
                   style={{
@@ -810,14 +815,20 @@ const LiveStream = () => {
                     fontSize: "1.5rem",
                   }}
                 >
-                  Prediction: {!prediction ? "Processing..." : prediction}
-                  {predAnalyzer.history.length
-                    ? `(${(
-                        (predAnalyzer.history.length /
-                          predAnalyzer.historySize) *
-                        100
-                      ).toFixed(0)}%)`
-                    : ""}
+                  {!isStarted ? (
+                    "Waiting to start..."
+                  ) : (
+                    <>
+                      Prediction: {!prediction ? "Processing..." : prediction}
+                      {predAnalyzer.history.length
+                        ? ` (${(
+                            (predAnalyzer.history.length /
+                              predAnalyzer.historySize) *
+                            100
+                          ).toFixed(0)}%)`
+                        : ""}
+                    </>
+                  )}
                 </h1>
               </div>
             </div>
@@ -906,10 +917,20 @@ const LiveStream = () => {
             <h3 className="text-xl font-bold mb-4">Controls</h3>
 
             <div className="space-y-4">
-              {workoutState.isActive && (
-                <button className="w-full py-3 rounded-lg bg-gradient-to-r from-red-500 to-pink-600 text-white font-medium transition hover:opacity-90 flex items-center justify-center gap-2">
+              {isStarted ? (
+                <button
+                  onClick={() => setIsStarted(false)}
+                  className="w-full py-3 rounded-lg bg-gradient-to-r from-red-500 to-pink-600 text-white font-medium transition hover:opacity-90 flex items-center justify-center gap-2"
+                >
                   <Pause size={20} />
                   Pause
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsStarted(true)}
+                  className="w-full py-3 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium transition hover:opacity-90 flex items-center justify-center gap-2"
+                >
+                  Start Exercise
                 </button>
               )}
               {predictionConfirmed && (
