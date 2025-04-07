@@ -23,33 +23,20 @@ const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({
       page: "Analytics",
     },
 
-    // { name: "Goals", icon: <HeartIcon className="h-5 w-5 mr-3" />, page: "Goals" },
-    {
-      name: "Start Workout",
-      icon: <Dumbbell className="mr-3" width={"20px"} />,
 
-      page: "StartWorkout",
-    },
-    {
-      name: "Track Food",
-      icon: <CameraIcon className="h-5 w-5 mr-3" />,
-      page: "UploadFood",
-    },
-    {
-      name: "Personalized Diet",
-      icon: <CameraIcon className="h-5 w-5 mr-3" />,
-      page: "diet-page",
-    },
-    {
-      name: "Personalized Workout Plan",
-      icon: <CameraIcon className="h-5 w-5 mr-3" />,
-      page: "workoutplan-page",
-    },
+    { name: "Start Workout", icon: <Dumbbell className="mr-3" width={"20px"} />, page: "StartWorkout" },
+    { name: "Track Food", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "UploadFood" },
+    { name: "Personalized Diet", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "diet-page" },
+    { name: "Personalized Workout Plan", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "workoutplan-page" },
     {
       name: "Settings",
       icon: <CogIcon className="h-5 w-5 mr-3" />,
       page: "Settings",
     },
+    { name: "Workouts Performed", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "workoutdisplay-page" },
+    { name: "Meals Tracked", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "mealdisplay-page" },
+    
+{/* >>>>>>> Stashed changes */}
   ];
 
   return (

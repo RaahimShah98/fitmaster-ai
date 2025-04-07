@@ -6,19 +6,21 @@ import { useRouter } from "next/navigation";
 import ChatbotInterface from "../chatBot/chatbot";
 import UserDashboardMenu from "./sideBar";
 import FloatingNav from "@/components/FloatingNav";
-import UserAnayltics from "./mainPage.tsx/Dashboard";
-import UserSettings from "./mainPage.tsx/userSettings";
-import UserGoals from "./mainPage.tsx/Goals";
-import PersonalizedWorkoutPlan from "./mainPage.tsx/workoutPlan";
-import PersonalizedDietPlan from "./mainPage.tsx/dietPlan";
-import { useAuth } from "@/context/FirebaseContext";
+import UserAnayltics from "./mainPage/Dashboard";
+import UserSettings from "./mainPage/userSettings";
+import UserGoals from "./mainPage/Goals";
+import PersonalizedWorkoutPlan from "./mainPage/workoutPlan";
+import PersonalizedDietPlan from "./mainPage/dietPlan";
+import { useAuth } from "@/context/FirebaseContext"
 import WorkoutProgress from "../workoutprogress/page";
+import MealDisplays from "./mainPage/MealDisplayPage";
+import WorkoutDisplay from "./mainPage/WorkoutDisplayPage";
 // import { firebaseConfig } from '@/lib/firebase';
 
 const UserDashboard: React.FC = () => {
   const { user } = useAuth();
   const email = user?.email || ""; // Use optional chaining
-  const [selectedPage, setSelectedPage] = useState("Analytics");
+  const [selectedPage, setSelectedPage] = useState("mealdisplay-page");
 
   const router = useRouter();
   useEffect(() => {
@@ -40,7 +42,6 @@ const UserDashboard: React.FC = () => {
         return <UserGoals email={email} />;
       case "StartWorkout":
         return <WorkoutProgress />;
-
       case "UploadFood":
         router.push("/FoodTracking");
         return;
@@ -48,8 +49,13 @@ const UserDashboard: React.FC = () => {
         return <PersonalizedWorkoutPlan email={email} />;
       case "diet-page":
         return <PersonalizedDietPlan email={email} />;
+      case "workoutdisplay-page":
+        return <WorkoutDisplay email={email} />;
+      case "mealdisplay-page":
+        return <MealDisplays email={email} />;
       default:
         return <UserAnayltics email={email} />;
+
     }
   };
 

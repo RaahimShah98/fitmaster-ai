@@ -8,7 +8,7 @@ import fetchPredictions from './getPrediction';
 import NutritionalDetailsModal from './nutritionDisplay';
 import getFoodItems from './FoodDatabase';
 import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc , setDoc } from 'firebase/firestore';
 import { useAuth } from '@/context/FirebaseContext';
 import { useRouter } from 'next/navigation';
 
@@ -155,22 +155,34 @@ export default function FoodTracker() {
     //   alert("No foods detected")
     //   return;
     // }
-
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const timeString = `${hours}:${minutes}`;
+    const date = getFormattedDateTime()
+    // const date = "04-04-2025"
     try {
       // Reference the subcollection (users/{userId}/posts)
 
-      if(detectedFoods.length == 0){
+      if (detectedFoods.length == 0) {
         setErrorMessage("No food detected")
         return;
       }
       setErrorMessage(null)
-      const postsRef = collection(db, "food_logs", email, getFormattedDateTime());
+      const parentDocRef = doc(db, "food_logs", email, "foods", date);
+      await setDoc(parentDocRef, {
+        createdAt: date, // or any other metadata
+      });
+
+      const postsRef = collection(db, "food_logs", email, "foods", date, "foods_eaten");
       console.log(postsRef)
+
       // Add a new document to the subcollection
       foodNutrients.map(async (food, index) => {
         console.log("LOGGING FOOD: ", food.name, index);
 
         const docRef = await addDoc(postsRef, {
+          time: timeString,
           content: food,
         });
 
