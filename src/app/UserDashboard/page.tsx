@@ -11,7 +11,7 @@ import UserSettings from "./mainPage/userSettings";
 import UserGoals from "./mainPage/Goals";
 import PersonalizedWorkoutPlan from "./mainPage/workoutPlan";
 import PersonalizedDietPlan from "./mainPage/dietPlan";
-import { useAuth } from "@/context/FirebaseContext"
+import { useAuth } from "@/context/FirebaseContext";
 import WorkoutProgress from "../workoutprogress/page";
 import MealDisplays from "./mainPage/MealDisplayPage";
 import WorkoutDisplay from "./mainPage/WorkoutDisplayPage";
@@ -55,7 +55,6 @@ const UserDashboard: React.FC = () => {
         return <MealDisplays email={email} />;
       default:
         return <UserAnayltics email={email} />;
-
     }
   };
 
