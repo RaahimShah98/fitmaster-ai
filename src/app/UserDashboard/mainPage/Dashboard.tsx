@@ -398,7 +398,7 @@ const BeautifulDashboardPage = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-slate-800/50 p-1 rounded-lg inline-flex mx-auto">
+        <div className="bg-slate-800/50 p-1 rounded-lg inline-flex mx-auto max-w-screen flex flex-wrap justify-evenly item-center">
           <button
             onClick={() => setActiveTab("overview")}
             className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${

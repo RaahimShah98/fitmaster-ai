@@ -20,7 +20,7 @@ import WorkoutDisplay from "./mainPage/WorkoutDisplayPage";
 const UserDashboard: React.FC = () => {
   const { user } = useAuth();
   const email = user?.email || ""; // Use optional chaining
-  const [selectedPage, setSelectedPage] = useState("mealdisplay-page");
+  const [selectedPage, setSelectedPage] = useState("Analytics");
 
   const router = useRouter();
   useEffect(() => {

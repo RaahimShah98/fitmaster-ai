@@ -38,11 +38,6 @@ const AddWeight: React.FC<addUserWeight> = ({ email, close }) => {
             return
         }
 
-        // else {
-        //     setAlert(false)
-        //     console.log(currentWeight)
-        //     setConfirm(true)
-        // }
         setAlert(false)
         try {
             const postRef = doc(db, "user_weight_tracking", email, "weights", getFormattedDateTime())
@@ -61,13 +56,13 @@ const AddWeight: React.FC<addUserWeight> = ({ email, close }) => {
     }
 
     return (
-        <section className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+        <section className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4 min-w-screen">
             <div className="flex flex-col w-full max-w-sm md:w-[30%] h-auto md:h-[50%] rounded-lg p-6 bg-gray-900 text-white relative">
 
                 {/* Close Button */}
                 <button
                     onClick={() => close(false)}
-                    className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition cursor-pointer"
+                    className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition cursor-pointer "
                 >
                     <X size={24} />
                 </button>
