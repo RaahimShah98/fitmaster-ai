@@ -179,92 +179,41 @@ const UserDashboardMenu = ({ setSelectedPage }) => {
             <h2 className="text-xl font-bold mb-8 pt-4">Dashboard</h2>
             {isMobile && <X className="relative bottom-2 left-8" size={24} onClick={() => setIsMenuOpen(!isMenuOpen)}/>}
           </div>
-          <nav>
-            <ul className="space-y-4">
-              <li>
-                <button
-                  onClick={() => handleMenuItemClick("Analytics")}
-                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "Analytics" ? "bg-gray-600" : "hover:bg-gray-700"}`}
-                >
-                  Analytics
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleMenuItemClick("Goals")}
-                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "Goals" ? "bg-gray-600" : "hover:bg-gray-700"}`}
-                >
-                  Goals
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleMenuItemClick("workoutplan-page")}
-                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "workoutplan-page" ? "bg-gray-600" : "hover:bg-gray-700"}`}
-                >
-                  Workout Plan
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleMenuItemClick("diet-page")}
-                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "diet-page" ? "bg-gray-600" : "hover:bg-gray-700"}`}
-                >
-                  Diet Plan
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleMenuItemClick("workoutdisplay-page")}
-                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "workoutdisplay-page" ? "bg-gray-600" : "hover:bg-gray-700"}`}
-                >
-                  Workout Display
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleMenuItemClick("mealdisplay-page")}
-                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "mealdisplay-page" ? "bg-gray-600" : "hover:bg-gray-700"}`}
-                >
-                  Meal Display
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleMenuItemClick("StartWorkout")}
-                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "StartWorkout" ? "bg-gray-600" : "hover:bg-gray-700"}`}
-                >
-                  Start Workout
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleMenuItemClick("UploadFood")}
-                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "UploadFood" ? "bg-gray-600" : "hover:bg-gray-700"}`}
-                >
-                  Upload Food
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleMenuItemClick("Settings")}
-                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "Settings" ? "bg-gray-600" : "hover:bg-gray-700"}`}
-                >
-                  Settings
-                </button>
-              </li>
-            </ul>
+          <nav className="flex-1 px-2 py-4 space-y-1">
+            {sideBarItems.map((item) => (
+              <button
+                key={item.page}
+                onClick={() => setSelectedPage(item.page)}
+                className="flex items-center w-full px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
+              >
+                {item.icon}
+                {item.name}
+              </button>
+            ))}
           </nav>
         </div>
       </div>
 
-      {/* Overlay for mobile */}
-      {isMobile && isMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30"
-          onClick={() => setIsMenuOpen(false)}
-        />
-      )}
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:flex lg:flex-shrink-0">
+        <div className="flex flex-col w-64 border-r border-gray-700 bg-gray-900 text-white">
+          <div className="flex items-center h-16 px-4 border-b border-gray-700">
+            <span className="text-xl font-semibold">FitMaster AI</span>
+          </div>
+          <nav className="flex-1 px-2 py-4 space-y-1">
+            {sideBarItems.map((item) => (
+              <button
+                key={item.page}
+                onClick={() => setSelectedPage(item.page)}
+                className="flex items-center w-full px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
+              >
+                {item.icon}
+                {item.name}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
     </>
   );
 };
