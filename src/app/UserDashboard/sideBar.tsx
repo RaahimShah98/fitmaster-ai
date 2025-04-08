@@ -23,11 +23,9 @@ const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({
       page: "Analytics",
     },
 
-    // { name: "Goals", icon: <HeartIcon className="h-5 w-5 mr-3" />, page: "Goals" },
     {
       name: "Start Workout",
       icon: <Dumbbell className="mr-3" width={"20px"} />,
-
       page: "StartWorkout",
     },
     {
@@ -49,6 +47,20 @@ const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({
       name: "Settings",
       icon: <CogIcon className="h-5 w-5 mr-3" />,
       page: "Settings",
+    },
+    // {
+    //   name: "Workouts Performed",
+    //   icon: <CameraIcon className="h-5 w-5 mr-3" />,
+    //   page: "workoutdisplay-page",
+    // },
+    // {
+    //   name: "Meals Tracked",
+    //   icon: <CameraIcon className="h-5 w-5 mr-3" />,
+    //   page: "mealdisplay-page",
+    // },
+
+    {
+      /* >>>>>>> Stashed changes */
     },
   ];
 
@@ -78,9 +90,9 @@ const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({
             </button>
           </div>
           <nav className="flex-1 px-2 py-4 space-y-1">
-            {sideBarItems.map((item) => (
+            {sideBarItems.map((item, i) => (
               <button
-                key={item.page}
+                key={item.page || i}
                 onClick={() => setSelectedPage(item.page)}
                 className="flex items-center w-full px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
               >
@@ -99,9 +111,9 @@ const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({
             <span className="text-xl font-semibold">FitMaster AI</span>
           </div>
           <nav className="flex-1 px-2 py-4 space-y-1">
-            {sideBarItems.map((item) => (
+            {sideBarItems.map((item, i) => (
               <button
-                key={item.page}
+                key={item.page || i}
                 onClick={() => setSelectedPage(item.page)}
                 className="flex items-center w-full px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
               >

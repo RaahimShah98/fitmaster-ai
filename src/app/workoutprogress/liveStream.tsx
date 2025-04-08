@@ -767,7 +767,12 @@ const LiveStream = () => {
                 {/* <h2 className="text-lg font-bold">Real-Time Pose Correction</h2> */}
               </div>
             </div>
-            <div className="relative flex flex-row justify-center">
+            <div
+              className="relative flex flex-row justify-center"
+              style={{
+                maxHeight: "500px",
+              }}
+            >
               {/* <div className="relative"> */}
               <div className="absolute top-0 right-0 z-10">
                 <select
@@ -788,7 +793,7 @@ const LiveStream = () => {
               <Webcam
                 ref={webcamRef}
                 screenshotFormat="image/jpeg"
-                className="w-full rounded"
+                className="w-full rounded object-cover"
                 videoConstraints={{
                   deviceId: selectedDeviceId
                     ? { exact: selectedDeviceId }
@@ -799,7 +804,7 @@ const LiveStream = () => {
                 <img
                   src={"data:image/jpeg;base64," + lastJsonMessage?.image}
                   alt="Processed Image"
-                  className="absolute left-0 top-0 h-full w-full"
+                  className="absolute left-0 top-0 h-full w-full object-cover"
                 />
               )}
 
