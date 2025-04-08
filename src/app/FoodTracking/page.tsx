@@ -21,6 +21,8 @@ type DetectedFood = {
 };
 
 
+
+
 export default function FoodTracker() {
   const { user } = useAuth();
   const email = user?.email || ""; // Use optional chaining
@@ -148,6 +150,7 @@ export default function FoodTracker() {
 
     return `${day}-${month}-${year}`;
   };
+  
 
   const logMeal = async () => {
     console.log(foodNutrients)

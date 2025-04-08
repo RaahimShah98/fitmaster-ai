@@ -1,15 +1,16 @@
-// import React, { useState } from "react";
-// import {
-//   XMarkIcon,
-//   ChartBarIcon,
-//   CogIcon,
-//   CameraIcon,
-//   HeartIcon,
-// } from "@heroicons/react/24/outline";
-// import { Move, Dumbbell } from "lucide-react";
-// interface UserDashboardMenuProps {
-//   setSelectedPage: (page: string) => void;
-// }
+import React, { useState , useEffect } from "react";
+import {
+  XMarkIcon,
+  ChartBarIcon,
+  CogIcon,
+  CameraIcon,
+  HeartIcon,
+} from "@heroicons/react/24/outline";
+import { Move, Dumbbell } from "lucide-react";
+
+interface UserDashboardMenuProps {
+  setSelectedPage: (page: string) => void;
+}
 
 // const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({
 //   setSelectedPage,
@@ -103,15 +104,33 @@
 // };
 
 // export default UserDashboardMenu;
-"use client";
+// "use client";
 
-import React, { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 
-const UserDashboardMenu = ({ setSelectedPage }) => {
+const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({ setSelectedPage }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [activePage, setActivePage] = useState("Analytics"); // Default active page
+  const sideBarItems = [
+    {
+      name: "Home",
+      icon: <ChartBarIcon className="h-5 w-5 mr-3" />,
+      page: "Analytics",
+    },
+    { name: "Start Workout", icon: <Dumbbell className="mr-3" width={"20px"} />, page: "StartWorkout" },
+    { name: "Track Food", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "UploadFood" },
+    { name: "Personalized Diet", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "diet-page" },
+    { name: "Personalized Workout Plan", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "workoutplan-page" },
+    {
+      name: "Settings",
+      icon: <CogIcon className="h-5 w-5 mr-3" />,
+      page: "Settings",
+    },
+    { name: "Meals Tracked", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "mealdisplay-page" },
+    { name: "Weight Tracking", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "Goals" },
+
+  ];
 
   // Check if the device is mobile
   useEffect(() => {
@@ -168,16 +187,16 @@ const UserDashboardMenu = ({ setSelectedPage }) => {
       {/* Sidebar Menu */}
       <div
         className={`sidebar fixed md:relative h-screen bg-gray-900 text-white transition-all duration-300 ease-in-out z-40 ${isMobile
-            ? isMenuOpen
-              ? "left-0 w-64"
-              : "-left-64 w-64"
-            : "w-64"
+          ? isMenuOpen
+            ? "left-0 w-64"
+            : "-left-64 w-64"
+          : "w-64"
           }`}
       >
         <div className="p-4">
           <div className="flex justify-evenly items-center">
             <h2 className="text-xl font-bold mb-8 pt-4">Dashboard</h2>
-            {isMobile && <X className="relative bottom-2 left-8" size={24} onClick={() => setIsMenuOpen(!isMenuOpen)}/>}
+            {isMobile && <X className="relative bottom-2 left-8" size={24} onClick={() => setIsMenuOpen(!isMenuOpen)} />}
           </div>
           <nav className="flex-1 px-2 py-4 space-y-1">
             {sideBarItems.map((item) => (
@@ -195,7 +214,7 @@ const UserDashboardMenu = ({ setSelectedPage }) => {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex lg:flex-shrink-0">
+      {/* <div className="hidden lg:flex lg:flex-shrink-0">
         <div className="flex flex-col w-64 border-r border-gray-700 bg-gray-900 text-white">
           <div className="flex items-center h-16 px-4 border-b border-gray-700">
             <span className="text-xl font-semibold">FitMaster AI</span>
@@ -213,7 +232,7 @@ const UserDashboardMenu = ({ setSelectedPage }) => {
             ))}
           </nav>
         </div>
-      </div>
+      </div> */}
     </>
   );
 };
