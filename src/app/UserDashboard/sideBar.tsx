@@ -7,108 +7,13 @@ import {
   HeartIcon,
 } from "@heroicons/react/24/outline";
 import { Move, Dumbbell } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 interface UserDashboardMenuProps {
   setSelectedPage: (page: string) => void;
 }
-
-// const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({
-//   setSelectedPage,
-// }) => {
-//   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-//   const sideBarItems = [
-//     {
-//       name: "Home",
-//       icon: <ChartBarIcon className="h-5 w-5 mr-3" />,
-//       page: "Analytics",
-//     },
-//     { name: "Start Workout", icon: <Dumbbell className="mr-3" width={"20px"} />, page: "StartWorkout" },
-//     { name: "Track Food", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "UploadFood" },
-//     { name: "Personalized Diet", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "diet-page" },
-//     { name: "Personalized Workout Plan", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "workoutplan-page" },
-//     {
-//       name: "Settings",
-//       icon: <CogIcon className="h-5 w-5 mr-3" />,
-//       page: "Settings",
-//     },
-//     { name: "Workouts Performed", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "workoutdisplay-page" },
-//     { name: "Meals Tracked", icon: <CameraIcon className="h-5 w-5 mr-3" />, page: "mealdisplay-page" },
-
-//     {/* >>>>>>> Stashed changes */ }
-//   ];
-
-//   return (
-//     <>
-//       {/* Mobile Sidebar */}
-//       <div
-//         className={`fixed inset-0 z-40 lg:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
-//           } transition-transform duration-300 ease-in-out`}
-//         aria-hidden={!sidebarOpen}
-//       >
-//         <div
-//           className={`fixed inset-0 bg-gray-800 bg-opacity-75 transition-opacity duration-300 ${sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-//             }`}
-//           onClick={() => setSidebarOpen(false)}
-//         ></div>
-//         <div className="fixed inset-y-0 left-0 flex flex-col w-64 max-w-xs bg-gray-900 border-r border-gray-700 text-white transform transition-transform duration-300">
-//           <div className="flex items-center justify-between h-16 px-4 border-b border-gray-700">
-//             <span className="text-xl font-semibold">
-//               <Move className="h-8 w-8 text-purple-300" />
-//               FitMaster AI
-//             </span>
-//             <button
-//               className="text-gray-400 hover:text-white"
-//               onClick={() => setSidebarOpen(false)}
-//             >
-//               <XMarkIcon className="h-6 w-6" />
-//             </button>
-//           </div>
-//           <nav className="flex-1 px-2 py-4 space-y-1">
-//             {sideBarItems.map((item) => (
-//               <button
-//                 key={item.page}
-//                 onClick={() => setSelectedPage(item.page)}
-//                 className="flex items-center w-full px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
-//               >
-//                 {item.icon}
-//                 {item.name}
-//               </button>
-//             ))}
-//           </nav>
-//         </div>
-//       </div>
-
-//       {/* Desktop Sidebar */}
-//       <div className="hidden lg:flex lg:flex-shrink-0">
-//         <div className="flex flex-col w-64 border-r border-gray-700 bg-gray-900 text-white">
-//           <div className="flex items-center h-16 px-4 border-b border-gray-700">
-//             <span className="text-xl font-semibold">FitMaster AI</span>
-//           </div>
-//           <nav className="flex-1 px-2 py-4 space-y-1">
-//             {sideBarItems.map((item) => (
-//               <button
-//                 key={item.page}
-//                 onClick={() => setSelectedPage(item.page)}
-//                 className="flex items-center w-full px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
-//               >
-//                 {item.icon}
-//                 {item.name}
-//               </button>
-//             ))}
-//           </nav>
-//         </div>
-//       </div>
-//     </>
-//   );
-// };
-
-// export default UserDashboardMenu;
-// "use client";
-
-import { Menu, X } from "lucide-react";
-
 const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({ setSelectedPage }) => {
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [activePage, setActivePage] = useState("Analytics"); // Default active page
@@ -149,7 +54,7 @@ const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({ setSelectedPage }
   }, []);
 
   // Function to handle menu item click
-  const handleMenuItemClick = (page) => {
+  const handleMenuItemClick = (page:string) => {
     setSelectedPage(page);
     setActivePage(page); // Track the active page
     if (isMobile) {
@@ -199,40 +104,84 @@ const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({ setSelectedPage }
             {isMobile && <X className="relative bottom-2 left-8" size={24} onClick={() => setIsMenuOpen(!isMenuOpen)} />}
           </div>
           <nav className="flex-1 px-2 py-4 space-y-1">
-            {sideBarItems.map((item) => (
-              <button
-                key={item.page}
-                onClick={() => setSelectedPage(item.page)}
-                className="flex items-center w-full px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
-              >
-                {item.icon}
-                {item.name}
-              </button>
-            ))}
+          <ul>
+            <li>
+                <button
+                  onClick={() => handleMenuItemClick("Analytics")}
+                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "Analytics" ? "bg-gray-600" : "hover:bg-gray-700"}`}
+                >
+                  Analytics
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleMenuItemClick("Goals")}
+                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "Goals" ? "bg-gray-600" : "hover:bg-gray-700"}`}
+                >
+                  Goals
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleMenuItemClick("workoutplan-page")}
+                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "workoutplan-page" ? "bg-gray-600" : "hover:bg-gray-700"}`}
+                >
+                  Workout Plan
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleMenuItemClick("diet-page")}
+                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "diet-page" ? "bg-gray-600" : "hover:bg-gray-700"}`}
+                >
+                  Diet Plan
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleMenuItemClick("workoutdisplay-page")}
+                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "workoutdisplay-page" ? "bg-gray-600" : "hover:bg-gray-700"}`}
+                >
+                  Workout Display
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleMenuItemClick("mealdisplay-page")}
+                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "mealdisplay-page" ? "bg-gray-600" : "hover:bg-gray-700"}`}
+                >
+                  Meal Display
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleMenuItemClick("StartWorkout")}
+                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "StartWorkout" ? "bg-gray-600" : "hover:bg-gray-700"}`}
+                >
+                  Start Workout
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleMenuItemClick("UploadFood")}
+                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "UploadFood" ? "bg-gray-600" : "hover:bg-gray-700"}`}
+                >
+                  Upload Food
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleMenuItemClick("Settings")}
+                  className={`w-full text-left py-2 px-4 rounded transition ${activePage === "Settings" ? "bg-gray-600" : "hover:bg-gray-700"}`}
+                >
+                  Settings
+                </button>
+              </li>
+            </ul>
           </nav>
         </div>
       </div>
 
-      {/* Desktop Sidebar */}
-      {/* <div className="hidden lg:flex lg:flex-shrink-0">
-        <div className="flex flex-col w-64 border-r border-gray-700 bg-gray-900 text-white">
-          <div className="flex items-center h-16 px-4 border-b border-gray-700">
-            <span className="text-xl font-semibold">FitMaster AI</span>
-          </div>
-          <nav className="flex-1 px-2 py-4 space-y-1">
-            {sideBarItems.map((item) => (
-              <button
-                key={item.page}
-                onClick={() => setSelectedPage(item.page)}
-                className="flex items-center w-full px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
-              >
-                {item.icon}
-                {item.name}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div> */}
     </>
   );
 };
