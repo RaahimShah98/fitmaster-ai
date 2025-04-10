@@ -489,7 +489,7 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
         <div className="flex flex-col flex-wrap ">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Daily Calorie Tracking */}
-            <div className="bg-black/50 p-6 rounded-lg shadow-md w-full md:w-[100%] mb-[20px]">
+            {/* <div className="bg-black/50 p-6 rounded-lg shadow-md w-full md:w-[100%] mb-[20px]">
               <h2 className="text-xl font-semibold mb-4">
                 Daily Calorie Tracking
               </h2>
@@ -505,7 +505,7 @@ const UserAnayltics: React.FC<UserAnalyticsProps> = ({ email }) => {
                   <span className="text-sm ">of {totalCalories} kcal</span>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Weight Tracker */}
 

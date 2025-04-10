@@ -6,21 +6,20 @@ import { useRouter } from "next/navigation";
 import ChatbotInterface from "../chatBot/chatbot";
 import UserDashboardMenu from "./sideBar";
 import FloatingNav from "@/components/FloatingNav";
-<<<<<<< HEAD
 import UserAnayltics from "./mainPage.tsx/Dashboard";
 import UserSettings from "./mainPage.tsx/userSettings";
 import UserGoals from "./mainPage.tsx/Goals";
 import PersonalizedWorkoutPlan from "./mainPage.tsx/workoutPlan";
 import PersonalizedDietPlan from "./mainPage.tsx/dietPlan";
-=======
-import UserAnayltics from "./mainPage/Dashboard";
-import UserSettings from "./mainPage/userSettings";
-import UserGoals from "./mainPage/Goals";
-import PersonalizedWorkoutPlan from "./mainPage/workoutPlan";
-import PersonalizedDietPlan from "./mainPage/dietPlan";
->>>>>>> 8aa545c (livestream ui changes)
+import MealDisplay from "./mainPage.tsx/MealDisplayPage";
+// import UserAnayltics from "./mainPage/Dashboard";
+// import UserSettings from "./mainPage/userSettings";
+// import UserGoals from "./mainPage/Goals";
+// import PersonalizedWorkoutPlan from "./mainPage/workoutPlan";
+// import PersonalizedDietPlan from "./mainPage/dietPlan";
 import { useAuth } from "@/context/FirebaseContext";
 import WorkoutProgress from "../workoutprogress/page";
+import FoodTracker from "../FoodTracking/page";
 // import { firebaseConfig } from '@/lib/firebase';
 
 const UserDashboard: React.FC = () => {
@@ -50,12 +49,16 @@ const UserDashboard: React.FC = () => {
         return <WorkoutProgress />;
 
       case "UploadFood":
-        router.push("/FoodTracking");
+        return <FoodTracker />;
+        // router.push("/FoodTracking");
         return;
       case "workoutplan-page":
         return <PersonalizedWorkoutPlan email={email} />;
       case "diet-page":
         return <PersonalizedDietPlan email={email} />;
+      case "mealdisplay-page":
+        return <MealDisplay email={email} />;
+
       default:
         return <UserAnayltics email={email} />;
     }

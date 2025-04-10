@@ -484,7 +484,7 @@ const BeautifulDashboardPage = () => {
 
         {activeTab === "overview" && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
               {/* Weekly Workout Completion */}
               <div className="bg-slate-800 p-6 rounded-xl shadow-xl border border-slate-700/50 hover:shadow-2xl transition-all duration-300">
                 <div className="flex justify-between items-center mb-4">
@@ -543,7 +543,7 @@ const BeautifulDashboardPage = () => {
               </div>
               {/* Performance Radar Chart */}
 
-              <div className="bg-black/50 p-6 rounded-lg shadow-md w-full md:w-[100%] mb-[20px]">
+              {/* <div className="bg-black/50 p-6 rounded-lg shadow-md w-full md:w-[100%] mb-[20px]">
                 <h2 className="text-xl font-semibold text-white mb-4">
                   Daily Calorie Tracking
                 </h2>
@@ -589,7 +589,7 @@ const BeautifulDashboardPage = () => {
                     </span>
                   </div>
                 </div>
-              </div>
+              </div> */}
               {/* <div className="bg-slate-800 p-6 rounded-xl shadow-xl border border-slate-700/50 hover:shadow-2xl transition-all duration-300">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold">Performance Matrix</h2>

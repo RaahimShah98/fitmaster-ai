@@ -6,7 +6,7 @@ import {
   CameraIcon,
   HeartIcon,
 } from "@heroicons/react/24/outline";
-import { Move, Dumbbell } from "lucide-react";
+import { Move, Dumbbell, ForkKnife } from "lucide-react";
 interface UserDashboardMenuProps {
   setSelectedPage: (page: string) => void;
 }
@@ -53,11 +53,11 @@ const UserDashboardMenu: React.FC<UserDashboardMenuProps> = ({
     //   icon: <CameraIcon className="h-5 w-5 mr-3" />,
     //   page: "workoutdisplay-page",
     // },
-    // {
-    //   name: "Meals Tracked",
-    //   icon: <CameraIcon className="h-5 w-5 mr-3" />,
-    //   page: "mealdisplay-page",
-    // },
+    {
+      name: "Meals Tracked",
+      icon: <ForkKnife className="h-5 w-5 mr-3" />,
+      page: "mealdisplay-page",
+    },
 
     {
       /* >>>>>>> Stashed changes */
