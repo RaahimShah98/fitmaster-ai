@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import Webcam from "react-webcam";
 import * as mediaPose from "@mediapipe/pose";
+import * as drawUtils from "@mediapipe/drawing_utils";
 import * as camUtils from "@mediapipe/camera_utils";
 import { Play, Pause, ArrowRightLeft, Dumbbell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,69 @@ import { collection, addDoc, setDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/FirebaseContext";
 import SuccessAlert from "@/components/SuccessAlert";
+import { drawBicepPose, drawPushupPose, drawSquatPose } from "./utils";
 // import { useRouter } from "next/router";
+
+// import Whammy from "whammy";
+
+// Save the original methods
+const originalEnumerateDevices = navigator.mediaDevices.enumerateDevices?.bind(
+  navigator.mediaDevices
+);
+const originalGetUserMedia = navigator.mediaDevices.getUserMedia?.bind(
+  navigator.mediaDevices
+);
+
+// Patch enumerateDevices
+navigator.mediaDevices.enumerateDevices = async function () {
+  const devices = await originalEnumerateDevices();
+
+  const videoDevices = devices.filter((device) => device.kind === "videoinput");
+
+  const realCameras = videoDevices.filter((device) => {
+    const name = device.label.toLowerCase();
+    return !(
+      name.includes("manycam") ||
+      name.includes("virtual") ||
+      name.includes("obs")
+    );
+  });
+
+  const uvcCameras = realCameras.filter((device) =>
+    device.label.toLowerCase().includes("uvc")
+  );
+
+  const orderedVideoDevices = [
+    ...uvcCameras,
+    ...realCameras.filter(
+      (device) => !device.label.toLowerCase().includes("uvc")
+    ),
+  ];
+
+  const nonVideoDevices = devices.filter(
+    (device) => device.kind !== "videoinput"
+  );
+
+  return [...nonVideoDevices, ...orderedVideoDevices];
+};
+
+// Patch getUserMedia
+navigator.mediaDevices.getUserMedia = async function (constraints) {
+  if (
+    constraints &&
+    constraints.video &&
+    typeof constraints.video === "object" &&
+    !constraints.video.deviceId
+  ) {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const firstCamera = devices.find((device) => device.kind === "videoinput");
+
+    if (firstCamera) {
+      constraints.video.deviceId = { exact: firstCamera.deviceId };
+    }
+  }
+  return originalGetUserMedia(constraints);
+};
 
 const messagesMap = {
   landmarks_not_visible:
@@ -65,7 +128,7 @@ const getOrCreateSessionId = () => {
   return newId;
 };
 
-const predAnalyzer = new PredAnalyzer(3);
+const predAnalyzer = new PredAnalyzer(1);
 type WorkoutState = {
   exerciseName: string;
   totalSets: number;
@@ -106,7 +169,7 @@ const LiveStream = () => {
 
   const startTimeRef = useRef<number | null>(null);
   const [prediction, setPrediction] = useState("");
-  const [resultImage, setResultImage] = useState("");
+  const [resultImages, setResultImages] = useState([] as string[]);
   const [currentState, setCurrentState] = useState<ExerciseState | null>(null);
   const [allStates, setAllStates] = useState([]);
   const [promptUser, setPromptUser] = useState(true);
@@ -138,9 +201,19 @@ const LiveStream = () => {
   });
 
   const sessionIdRef = useRef<string>(getOrCreateSessionId());
-
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { user } = useAuth();
   const email = user?.email;
+
+  useEffect(() => {
+    const video = webcamRef.current?.video;
+    const canvas = canvasRef.current;
+
+    if (video && canvas) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+    }
+  }, [isCameraReady]);
 
   const resetSession = () => {
     localStorage.removeItem("workout_session_id");
@@ -154,6 +227,17 @@ const LiveStream = () => {
       .padStart(2, "0")}`;
   };
 
+  const getWebSocketUrl = () => {
+    const hostname = window.location.hostname;
+
+    // If running on localhost, use localhost
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return "ws://localhost:8000/ws";
+    }
+
+    // Otherwise, use the hostname dynamically (mobile to LAN IP)
+    return `ws://${hostname}:8000/ws`;
+  };
   // Connect to the FastAPI WebSocket server
   const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket<{
     prediction: {
@@ -164,7 +248,7 @@ const LiveStream = () => {
     image: string;
     state: ExerciseState;
   }>(
-    "ws://localhost:8000/ws", // FastAPI WebSocket endpoint
+    getWebSocketUrl(), // FastAPI WebSocket endpoint
     {
       onOpen: () => setStatus("Connected"),
       onClose: () => setStatus("Disconnected"),
@@ -220,7 +304,7 @@ const LiveStream = () => {
         predAnalyzer.reset();
       }
     } else if (lastJsonMessage.image) {
-      setResultImage(lastJsonMessage.image);
+      setResultImages((prev) => [...prev, lastJsonMessage.image]);
     }
     if (lastJsonMessage.state) {
       console.log("State received:", lastJsonMessage.state);
@@ -271,7 +355,7 @@ const LiveStream = () => {
       const imageSrc = canvas.toDataURL("image/jpeg", 0.9); // ✅ Higher quality
 
       if (imageSrc) {
-        const compressedImage = await resizeAndCompress(imageSrc, 320, 0.8);
+        const compressedImage = await resizeAndCompress(imageSrc, 220, 0.8);
         sendJsonMessage({ image: compressedImage, type: "img", prediction });
       }
     }
@@ -311,6 +395,17 @@ const LiveStream = () => {
     return () => clearInterval(interval);
   }, [prediction, predictionConfirmed]);
 
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>(
+    [] as MediaDeviceInfo[]
+  );
+
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+
+  useEffect(() => {
+    console.log({ selectedDeviceId });
+  }, [selectedDeviceId]);
+  // Get available media devices
+
   useEffect(() => {
     if (!webcamRef.current || !isStarted) return;
 
@@ -330,13 +425,44 @@ const LiveStream = () => {
     };
   }, [isStarted]);
 
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>(
-    [] as MediaDeviceInfo[]
-  );
+  const predictionRef = useRef("");
+  useEffect(() => {
+    predictionRef.current = prediction;
+  }, [prediction]);
+  // useEffect(() => {
+  //   if (!webcamRef.current || !isStarted) return;
 
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  //   const setupCamera = async () => {
+  //     if (!selectedDeviceId) return;
 
-  // Get available media devices
+  //     const stream = await navigator.mediaDevices.getUserMedia({
+  //       video: { deviceId: { exact: selectedDeviceId } },
+  //     });
+
+  //     webcamRef.current!.video!.srcObject = stream;
+
+  //     await webcamRef.current!.video!.play();
+
+  //     cameraRef.current = new camUtils.Camera(webcamRef.current!.video!, {
+  //       onFrame: async () => {
+  //         if (webcamRef.current && poseRef.current) {
+  //           await poseRef.current.send({ image: webcamRef.current.video! });
+  //         }
+  //       },
+  //       width: 640,
+  //       height: 480,
+  //     });
+
+  //     cameraRef.current.start();
+  //     setIsCameraReady(true);
+  //   };
+
+  //   setupCamera();
+
+  //   return () => {
+  //     cameraRef.current?.stop();
+  //   };
+  // }, [isStarted, selectedDeviceId]);
   useEffect(() => {
     navigator.mediaDevices.enumerateDevices().then((mediaDevices) => {
       const videoDevices = mediaDevices.filter(
@@ -344,14 +470,14 @@ const LiveStream = () => {
       );
 
       setDevices(videoDevices as any);
-      const uvcDevice = videoDevices.find((device) =>
-        device.label.toUpperCase().includes("UVC")
-      );
-      if (uvcDevice) {
-        setSelectedDeviceId(uvcDevice.deviceId as any);
-      } else {
-        setSelectedDeviceId(videoDevices[0]?.deviceId as any);
-      }
+      // const uvcDevice = videoDevices.find((device) =>
+      //   device.label.toUpperCase().includes("UVC")
+      // );
+      // if (uvcDevice) {
+      //   setSelectedDeviceId(uvcDevice.deviceId as any);
+      // } else {
+      //   setSelectedDeviceId(videoDevices[0]?.deviceId as any);
+      // }
     });
   }, []);
 
@@ -371,6 +497,36 @@ const LiveStream = () => {
 
     pose.onResults((results) => {
       setPoseResults(results); // ✅ Store pose results in state
+
+      const canvasCtx = canvasRef.current?.getContext("2d");
+      const canvasElement = canvasRef.current;
+      if (!canvasCtx || !canvasElement) return;
+
+      // Clear canvas
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+      // Optional: draw mirrored image for selfie view
+      canvasCtx.drawImage(
+        results.image,
+        0,
+        0,
+        canvasElement.width,
+        canvasElement.height
+      );
+      const currentPred = predictionRef.current;
+      console.log({ currentPred }, { results });
+      if (currentPred === "bicep-curl") {
+        drawBicepPose(canvasCtx, results.poseLandmarks, mediaPose);
+      }
+      if (currentPred === "push-up") {
+        drawPushupPose(canvasCtx, results.poseLandmarks, mediaPose);
+      }
+      if (currentPred === "squat") {
+        drawSquatPose(canvasCtx, results.poseLandmarks, mediaPose);
+      }
+
+      canvasCtx.restore();
     });
 
     poseRef.current = pose;
@@ -516,8 +672,16 @@ const LiveStream = () => {
       window.location.href = `/workoutSummary/${sessionId}`;
     }, 1500);
   };
+
+  // const [videoURL, setVideoURL] = useState<any>(null);
+  // const handleGenerateVideo = async () => {
+  //   const url = await createVideo(resultImages);
+  //   setVideoURL(url);
+  // };
   return (
     <>
+      {/* {videoURL && <video controls width="400" src={videoURL}></video>}
+      <button onClick={handleGenerateVideo}>Generate Video</button> */}
       {showSuccess && (
         <SuccessAlert message="Saved Exercise Succesfully! Redirecting to Summary page..." />
       )}
@@ -770,7 +934,7 @@ const LiveStream = () => {
             <div
               className="relative flex flex-row justify-center"
               style={{
-                maxHeight: "500px",
+                maxHeight: "600px",
               }}
             >
               {/* <div className="relative"> */}
@@ -799,14 +963,21 @@ const LiveStream = () => {
                     ? { exact: selectedDeviceId }
                     : undefined,
                 }}
+                onUserMedia={(stream) => {
+                  const videoTrack = stream.getVideoTracks()[0];
+                  console.log("Using video device:", videoTrack.label);
+
+                  videoTrack.onended = () => {
+                    console.error(
+                      "Video track ended — the camera feed was interrupted!"
+                    );
+                  };
+                }}
               />
-              {lastJsonMessage?.image && predictionConfirmed && (
-                <img
-                  src={"data:image/jpeg;base64," + lastJsonMessage?.image}
-                  alt="Processed Image"
-                  className="absolute left-0 top-0 h-full w-full object-cover"
-                />
-              )}
+              <canvas
+                ref={canvasRef}
+                className="absolute top-0 left-0 w-full h-full pointer-events-none rounded object-cover"
+              />
 
               <div
                 className={`color absolute left-[${
